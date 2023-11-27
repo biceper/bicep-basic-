@@ -49,6 +49,9 @@ param ExistBastion bool = false
 param ExistVM bool = false
 param ExistSQLServer bool = true
 //-------
+//-------
+//-------
+
 // 1. Create a hub virtual network
 module createHubVNet './modules/1.hub-vnet.bicep' = if (ExistHubVnet) {
   name: 'createHubVnet'
@@ -102,7 +105,7 @@ module createBastion './modules/4.bastion.bicep' = if(ExistBastion) {
 }
 
 // 5. create a virtual machine in the spoke virtual network
-module createVM './modules/5.vm.bicep' = if(ExistVM) {
+module createVM './modules/5.virtualMachine.bicep' = if(ExistVM) {
   name: 'createVM'
   params: {
     location: location
@@ -114,171 +117,13 @@ module createVM './modules/5.vm.bicep' = if(ExistVM) {
 }
 
 // 6. create a SQL Server and a SQL Database
-module createSQLServer './modules/6.sqlServer.bicep' = if(ExistSQLServer) {
+module createSQLServer './modules/6.sqlServer&Database.bicep' = if(ExistSQLServer) {
   name: 'createSQLServer'
   params: {
     location: location
     sqlServerName: sqlServerName
-    sqlDatabaseName: sqlDatabaseName
+    //sqlDatabaseName: sqlDatabaseName
   }
 }
 
-//--------------------------------------------------
-
-/*
-
-// Create a storage account
-resource storageAccount 'Microsoft.Storage/storageAccounts@2021-04-01' = {
-  name: 'mystorageaccount'
-  location: rg.location
-  sku: {
-    name: 'Standard_LRS'
-  }
-  kind: 'StorageV2'
-}
-
-// Create a virtual machine in the spoke virtual network
-resource vm 'Microsoft.Compute/virtualMachines@2021-03-01' = {
-  name: 'myVM'
-  location: rg.location
-  dependsOn: [
-    spokeVnet
-    storageAccount
-    nsg
-    nic
-  ]
-  properties: {
-    hardwareProfile: {
-      vmSize: 'Standard_DS1_v2'
-    }
-    storageProfile: {
-      imageReference: {
-        publisher: 'Canonical'
-        offer: 'UbuntuServer'
-        sku: '18.04-LTS'
-        version: 'latest'
-      }
-      osDisk: {
-        createOption: 'FromImage'
-        name: 'myVMosdisk'
-        caching: 'ReadWrite'
-        managedDisk: {
-          storageAccountType: 'Standard_LRS'
-        }
-      }
-    }
-    networkProfile: {
-      networkInterfaces: [
-        {
-          id: nic.id
-        }
-      ]
-    }
-  }
-}
-
-// Create a network interface for the virtual machine
-resource nic 'Microsoft.Network/networkInterfaces@2021-02-01' = {
-  name: 'myNic'
-  location: rg.location
-  dependsOn: [
-    spokeVnet
-  ]
-  properties: {
-    ipConfigurations: [
-      {
-        name: 'myIpConfig'
-        properties: {
-          subnet: {
-            id: spokeVnet.properties.subnets[0].id
-          }
-          privateIPAllocationMethod: 'Dynamic'
-        }
-      }
-    ]
-  }
-}
-
-// Create a Network Security Group for the virtual machine
-resource nsg 'Microsoft.Network/networkSecurityGroups@2021-02-01' = {
-  name: 'myNSG'
-  location: rg.location
-  properties: {
-    securityRules: [
-      {
-        name: 'SSH'
-        properties: {
-          protocol: 'Tcp'
-          sourcePortRange: '*'
-          destinationPortRange: '22'
-          sourceAddressPrefix: '*'
-          destinationAddressPrefix: '*'
-          access: 'Allow'
-          direction: 'Inbound'
-          priority: 100
-        }
-      }
-    ]
-  }
-}
-
-// Create a Bastion
-resource bastion 'Microsoft.Network/bastionHosts@2021-02-01' = {
-  name: 'myBastion'
-  location: rg.location
-  dependsOn: [
-    hubVnet
-  ]
-  properties: {
-    ipConfigurations: [
-      {
-        name: 'myBastionIpConfig'
-        properties: {
-          subnet: {
-            id: hubVnet.properties.subnets[0].id
-          }
-          publicIPAddress: {
-            id: publicIp.id
-          }
-        }
-      }
-    ]
-  }
-}
-
-// Create a public IP address for the Bastion
-resource publicIp 'Microsoft.Network/publicIPAddresses@2021-02-01' = {
-  name: 'myPublicIp'
-  location: rg.location
-  properties: {
-    sku: {
-      name: 'Standard'
-    }
-    publicIPAllocationMethod: 'Static'
-  }
-}
-
-// Add the virtual machine to the Network Security Group
-resource vmNSGAssociation 'Microsoft.Network/networkInterfaces/securityRules@2021-02-01' = {
-  name: 'myNSGAssociation'
-  dependsOn: [
-    nsg
-    nic
-  ]
-  properties: {
-    networkInterface: {
-      id: nic.id
-    }
-    securityRuleAssociations: [
-      {
-        securityRule: {
-          id: nsg.properties.securityRules[0].id
-        }
-        direction: 'Inbound'
-      }
-    ]
-  }
-}
-
-
-*/
+//---EOF----
