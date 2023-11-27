@@ -36,15 +36,21 @@ param bastionName string = 'poc-Bastion-Hub'
 param vmName string = 'poc-VM-Windows10'
 param vmSize string = 'Standard_D2s_v3'
 
+// - - - SQL Server - - -
+param sqlServerName string = 'poc-SQL-Server'
+param sqlDatabaseName string = 'poc-SQL-DB'
+
 // - - - Boolean for engaging deployment - - -
 // - - - true: engage / false; not engage - - -
 param ExistHubVnet bool = false
 param ExistSpokeVnet bool = false
 param ExistVnetPeering bool = false
 param ExistBastion bool = false
+param ExistVM bool = false
+param ExistSQLServer bool = true
 //-------
 // 1. Create a hub virtual network
-module createHubVnet './modules/1.hub-vnet.bicep' =  {
+module createHubVNet './modules/1.hub-vnet.bicep' = if (ExistHubVnet) {
   name: 'createHubVnet'
   params: {
     location: location
@@ -54,7 +60,7 @@ module createHubVnet './modules/1.hub-vnet.bicep' =  {
 }
 
 // 2. Create a spoke virtual network
-module createSpokeVnet './modules/2.spoke-vnet.bicep' = if(ExistSpokeVnet) {
+module createSpokeVNet './modules/2.spoke-vnet.bicep' = if(ExistSpokeVnet) {
   name: 'createSpokeVnet'
   params: {
     location: location
@@ -68,47 +74,22 @@ module createSpokeVnet './modules/2.spoke-vnet.bicep' = if(ExistSpokeVnet) {
 }
 
 // 3. Create a virtual network peering between the hub and spoke virtual networks
-module createVnetPeering './modules/3.vnetPeering.bicep' = if(ExistVnetPeering) {
+module createVNetPeering './modules/3.vnetPeering.bicep' = if(ExistVnetPeering) {
   name: 'createVnetPeering'
   params: {
-    vnetNameHub: createHubVnet.outputs.hubVnetName
-    vnetNameSpk: createSpokeVnet.outputs.spkVnetName
-    vnetHubVnetID:createHubVnet.outputs.hubVnetId
-    vnetSpkVnetID:createSpokeVnet.outputs.spkVnetId
+    vnetNameHub: createHubVNet.outputs.hubVnetName
+    vnetNameSpk: createSpokeVNet.outputs.spkVnetName
+    vnetHubVnetID:createHubVNet.outputs.hubVnetId
+    vnetSpkVnetID:createSpokeVNet.outputs.spkVnetId
   }
 }
-
-/*
-// 4. create a subvnet in a virtual network
-module createSubvnet './modules/4.subnet.bicep' = {
-  name: 'createSubvnet'
-  params: {
-    vnetName:createHubVnet.outputs.hubVnetName
-    subnetName:bastionSubnetName
-    ipAddressPrefix:ipAddressPrefixBastionSubnet
-  }
-}
-
-// 5. create a public IP address
-module createPublicIp './modules/5.publicIp.bicep' = {
-  name: 'createPublicIp'
-  params: {
-  location: location
-  publicIpName: publicIpName
-  publicIpAllocationMethod: publicIpAllocationMethod
-  publicIpAddressVersion: publicIpAddressVersion
-  publicIpSkuName: publicIpSkuName
-  publicIpSkuTier: publicIpSkuTier
-  }
-}
-*/
 
 // 4. create a bastion subnet in the hub virtual network
 module createBastion './modules/4.bastion.bicep' = if(ExistBastion) {
   name: 'createBastion'
   params: {
     location: location
-    vnetName: createHubVnet.outputs.hubVnetName
+    vnetName: createHubVNet.outputs.hubVnetName
     subnetName: bastionSubnetName
     ipAddressPrefix:ipAddressPrefixBastionSubnet
     publicIpAllocationMethod: publicIpAllocationMethod
@@ -120,76 +101,25 @@ module createBastion './modules/4.bastion.bicep' = if(ExistBastion) {
   }
 }
 
-resource tmpSpokeVnet 'Microsoft.Network/virtualNetworks@2023-05-01' existing = {
-  name: vnetNameSpk
-}
-
-resource tmpSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-05-01' existing = {
-  name: subnetName1Spk
-  parent: tmpSpokeVnet
-}
-
-// Create a network interface in the subnet
-resource VmWindows10Nic 'Microsoft.Network/networkInterfaces@2021-02-01' = {
-  name: 'VmWindows10Nic'
-  location: location
-  properties: {
-    ipConfigurations: [
-      {
-        name: 'IpconfigNic01'
-        properties: {
-          subnet: {
-            id: tmpSubnet.id
-          }
-          privateIPAllocationMethod: 'Dynamic'
-        }
-      }
-    ]
+// 5. create a virtual machine in the spoke virtual network
+module createVM './modules/5.vm.bicep' = if(ExistVM) {
+  name: 'createVM'
+  params: {
+    location: location
+    vnetName: createSpokeVNet.outputs.spkVnetName
+    subnetName: subnetName1Spk
+    vmName: vmName
+    vmSize: vmSize
   }
 }
 
-// create a virtual machine in the spoke virtual network
-resource vm 'Microsoft.Compute/virtualMachines@2021-04-01' = {
-  name: vmName
-  location: location
-  properties: {
-    hardwareProfile: {
-      vmSize: vmSize
-    }
-    storageProfile: {
-      imageReference: {
-        publisher: 'MicrosoftVisualStudio'
-        offer: 'Windows'
-        sku: 'Windows-10-N-x64'
-        version: 'latest'
-      }
-      osDisk: {
-        createOption: 'FromImage'
-        caching: 'ReadWrite'
-        managedDisk: {
-          storageAccountType: 'Premium_LRS'
-        }
-      }
-    }
-    osProfile: {
-      computerName: 'myVM'
-      adminUsername: 'adminuser'
-      adminPassword: 'Rduaain08180422'
-      windowsConfiguration: {
-        provisionVMAgent: true
-        enableAutomaticUpdates: true
-      }
-    }
-    networkProfile: {
-      networkInterfaces: [
-        {
-          id: VmWindows10Nic.id
-          properties: {
-            primary: true
-          }
-        }
-      ]
-    }
+// 6. create a SQL Server and a SQL Database
+module createSQLServer './modules/6.sqlServer.bicep' = if(ExistSQLServer) {
+  name: 'createSQLServer'
+  params: {
+    location: location
+    sqlServerName: sqlServerName
+    sqlDatabaseName: sqlDatabaseName
   }
 }
 
