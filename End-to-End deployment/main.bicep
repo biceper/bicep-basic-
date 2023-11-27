@@ -122,7 +122,7 @@ module createSQLServer './modules/6.sqlServer&Database.bicep' = if(ExistSQLServe
   params: {
     location: location
     sqlServerName: sqlServerName
-    //sqlDatabaseName: sqlDatabaseName
+    sqlDatabaseName: sqlDatabaseName
   }
 }
 
