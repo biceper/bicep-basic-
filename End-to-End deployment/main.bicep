@@ -1,7 +1,8 @@
 // - - - preconditions - - - 
 // - - - - - - - - - - - - -
-//All resources will be deployed in the resource group called "Bicep-fundermental-resourcegroup"
-//All states like location will be inherited from the resource group
+//All resources will be deployed in resource group "Bicep-fundermental-resourcegroup"
+//location will be inherited from the resource group
+// - - - - - - - - - - - - -
 // - - - - - - - - - - - - -
 
 // - - - Paremeters defination - - - 
@@ -20,7 +21,7 @@ param subnetName2Spk string = 'poc-spk01-subnet02'
 param ipAddressPrefixSpk01Subnet01 string = '10.1.0.0/24'
 param ipAddressPrefixSpk01Subnet02 string = '10.1.1.0/24'
 
-// - - - Public IP - - -
+// - - - Public IP(Bastion) - - -
 param publicIpName string = 'poc-Bastion-PublicIP'
 param publicIpAllocationMethod string = 'Static'
 param publicIpAddressVersion string = 'IPv4'
@@ -50,7 +51,7 @@ param ExistVM bool = false
 param ExistSQLServer bool = true
 //-------
 //-------
-//-------
+//------- Program starts here -------
 
 // 1. Create a hub virtual network
 module createHubVNet './modules/1.hub-vnet.bicep' = if (ExistHubVnet) {
