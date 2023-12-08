@@ -56,9 +56,9 @@ param sqlDatabaseName string = 'bicep-poc-sqldatabase'
 // - - - Boolean for engaging deployment - - -
 // - - - true: engage / false; not engage - - -
 @description('Booleans for engaging deployment')
-param ExistHubVnet bool = false
-param ExistSpokeVnet bool = false
-param ExistVnetPeering bool = false
+param ExistHubVnet bool = true
+param ExistSpokeVnet bool = true
+param ExistVnetPeering bool = true
 param ExistVM bool = true
 param ExistSQLServer bool = false
 param ExistBastion bool = false
