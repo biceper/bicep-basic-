@@ -77,6 +77,24 @@ then
 
 fi
 
+#--- Deletet SQL database and server ---
+SeleteFLG=1
+if ((deleteFLG == 1))
+then
+    dbs=$(az sql db list --server "bicep-poc-sqlserver" --query "[?resourceGroup=='$resourceGroupName'].id" -o tsv)
+
+    for db in ${dbs[@]}
+    do 
+        echo "Deleting sqldatabase with Id: "$id
+        az sql db delete --ids $id --yes
+        wait   # wait for the disk deletion
+        echo "Deleted sqldatabase with Id: "$id
+    done
+
+fi
+
+
+
 az network vnet delete --name $hubvnetName --resource-group $resourceGroupName --subscription $subscriptionName
 wait    # wait for the vnet deletion
 az network vnet delete --name $spokevnetName --resource-group $resourceGroupName --subscription $subscriptionName

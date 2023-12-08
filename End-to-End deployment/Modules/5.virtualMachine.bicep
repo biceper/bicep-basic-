@@ -3,6 +3,14 @@ param vnetName string
 param subnetName string
 param vmName string
 param vmSize string
+param vmComputerName string
+param vmOSVersion string
+
+@secure()
+param adminUsername string
+
+@secure()
+param adminPassword string
 
 resource tmpSpokeVnet 'Microsoft.Network/virtualNetworks@2023-05-01' existing = {
   name: vnetName
@@ -14,8 +22,8 @@ resource tmpSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-05-01' existi
 }
 
 // Create a network interface in the subnet
-resource VmWindows10Nic 'Microsoft.Network/networkInterfaces@2021-02-01' = {
-  name: 'VmWindows10Nic'
+resource VmWindowsNic 'Microsoft.Network/networkInterfaces@2023-05-01' = {
+  name: 'Nic-${vmName}'
   location: location
   dependsOn: [
     tmpSubnet
@@ -23,7 +31,7 @@ resource VmWindows10Nic 'Microsoft.Network/networkInterfaces@2021-02-01' = {
   properties: {
     ipConfigurations: [
       {
-        name: 'IpconfigNic01'
+        name: 'Nic-${vmName}'
         properties: {
           subnet: {
             id: tmpSubnet.id
@@ -35,8 +43,10 @@ resource VmWindows10Nic 'Microsoft.Network/networkInterfaces@2021-02-01' = {
   }
 }
 
+
+
 // create a virtual machine in the spoke virtual network
-resource createVM 'Microsoft.Compute/virtualMachines@2021-04-01' = {
+resource createVM 'Microsoft.Compute/virtualMachines@2023-07-01' = {
   name: vmName
   location: location
   properties: {
@@ -47,7 +57,7 @@ resource createVM 'Microsoft.Compute/virtualMachines@2021-04-01' = {
       imageReference: {
         publisher: 'MicrosoftVisualStudio'
         offer: 'Windows'
-        sku: 'Windows-10-N-x64'
+        sku: vmOSVersion
         version: 'latest'
       }
       osDisk: {
@@ -59,9 +69,9 @@ resource createVM 'Microsoft.Compute/virtualMachines@2021-04-01' = {
       }
     }
     osProfile: {
-      computerName: 'myVM'
-      adminUsername: 'adminuser'
-      adminPassword: 'Rduaain08180422'
+      computerName: vmComputerName
+      adminUsername: adminUsername
+      adminPassword: adminPassword
       windowsConfiguration: {
         provisionVMAgent: true
         enableAutomaticUpdates: true
@@ -70,7 +80,7 @@ resource createVM 'Microsoft.Compute/virtualMachines@2021-04-01' = {
     networkProfile: {
       networkInterfaces: [
         {
-          id: VmWindows10Nic.id
+          id: VmWindowsNic.id
           properties: {
             primary: true
           }
