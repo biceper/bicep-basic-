@@ -1,10 +1,6 @@
-//param location string
-//param sqlServerName string
-//param sqlDatabaseName string
-
-param location string = 'japaneast'
-param sqlServerName string = 'bicep-poc-sqlserver'
-param sqlDatabaseName string = 'bicep-poc-sqldatabase'
+param location string
+param sqlServerName string
+param sqlDatabaseName string
 
 resource sqlServer 'Microsoft.Sql/servers@2021-02-01-preview' = {
   name: sqlServerName

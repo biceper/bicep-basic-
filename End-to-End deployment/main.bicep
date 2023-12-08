@@ -44,23 +44,24 @@ param vmName array  = ['poc-VM-01','poc-VM-02','poc-VM-03']
 param vmSize string = 'Standard_D2s_v3'
 param adun string = 'adminuser'
 param adps string = 'P@ssw0rd1234'
-param vmComputerName array = ['poc-VM-com-01','poc-VM-com-02','poc-VM-com-03']
+param vmComputerName array = ['poc-VM-11','poc-VM-12','poc-VM-13']
 param vmOSVersion string = 'Windows-10-N-x64'
+param vmIndex array = [0,1,2]
 
 // - - - SQL Server - - -
 @description('Parameters for SQL Server')
-param sqlServerName string = 'poc-SQL-Server'
-param sqlDatabaseName string = 'poc-SQL-DB'
+param sqlServerName string = 'bicep-poc-sqlserver'
+param sqlDatabaseName string = 'bicep-poc-sqldatabase'
 
 // - - - Boolean for engaging deployment - - -
 // - - - true: engage / false; not engage - - -
 @description('Booleans for engaging deployment')
-param ExistHubVnet bool = true
-param ExistSpokeVnet bool = true
-param ExistVnetPeering bool = true
-param ExistBastion bool = true
+param ExistHubVnet bool = false
+param ExistSpokeVnet bool = false
+param ExistVnetPeering bool = false
 param ExistVM bool = true
-param ExistSQLServer bool = true
+param ExistSQLServer bool = false
+param ExistBastion bool = false
 //-------
 //-------
 //------- Program starts here -------
@@ -101,11 +102,11 @@ module createVNetPeering './modules/3.vnetPeering.bicep' = if(ExistVnetPeering) 
 }
 
 // 4. create a virtual machine in the spoke virtual network
-module createVM './modules/5.virtualMachine.bicep' = [for i in vmName: if(ExistVM) {
-  name: 'VM-${i}'
+module createVM './modules/5.virtualMachine.bicep' = [for i in vmIndex: if(ExistVM) {
+  name: 'VM${i}'
   params: {
     location: location
-    vnetName: createSpokeVNet.outputs.spkVnetName
+    vnetName: vnetNameSpk
     subnetName: subnetName1Spk
     vmName: vmName[i]
     vmSize: vmSize
@@ -131,7 +132,7 @@ module createBastion './modules/4.bastion.bicep' = if(ExistBastion) {
   name: 'createBastion'
   params: {
     location: location
-    vnetName: createHubVNet.outputs.hubVnetName
+    vnetName: vnetNameHub
     subnetName: bastionSubnetName
     ipAddressPrefix:ipAddressPrefixBastionSubnet
     publicIpAllocationMethod: publicIpAllocationMethod

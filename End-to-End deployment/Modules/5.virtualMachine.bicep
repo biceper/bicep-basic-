@@ -31,7 +31,7 @@ resource VmWindowsNic 'Microsoft.Network/networkInterfaces@2023-05-01' = {
   properties: {
     ipConfigurations: [
       {
-        name: 'Nic-${vmName}'
+        name: 'Nic-${vmComputerName}'
         properties: {
           subnet: {
             id: tmpSubnet.id
@@ -43,12 +43,13 @@ resource VmWindowsNic 'Microsoft.Network/networkInterfaces@2023-05-01' = {
   }
 }
 
-
-
 // create a virtual machine in the spoke virtual network
 resource createVM 'Microsoft.Compute/virtualMachines@2023-07-01' = {
   name: vmName
   location: location
+  dependsOn: [
+    VmWindowsNic
+  ]
   properties: {
     hardwareProfile: {
       vmSize: vmSize
@@ -89,3 +90,5 @@ resource createVM 'Microsoft.Compute/virtualMachines@2023-07-01' = {
     }
   }
 }
+
+
