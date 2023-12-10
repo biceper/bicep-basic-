@@ -5,11 +5,41 @@ hubvnetName="poc-Hub-Vnet"
 spokevnetName="poc-Spk-Vnet-01"
 
 
-#az network bastion delete --name 'poc-Bastion-Hub' --resource-group $resourceGroupName --subscription $subscriptionName
-#wait    # wait for the bastion deletion
+az network bastion delete --name 'poc-Bastion-Hub' --resource-group $resourceGroupName --subscription $subscriptionName
+wait    # wait for the bastion deletion
 
-#az network public-ip delete --name 'poc-Bastion-PublicIP' --resource-group $resourceGroupName --subscription $subscriptionName
-#wait    # wait for the public ip deletion
+az network public-ip delete --name 'poc-Bastion-PublicIP' --resource-group $resourceGroupName --subscription $subscriptionName
+wait    # wait for the public ip deletion
+
+#--- Detach all nsgs -------
+echo "Start detaching all nsgs"
+deleteFLG=1
+if (( $deleteFLG == 1 ))
+then
+    echo "Getting vnet list in the resource group: "$resourceGroupName""
+    vnets=$(az network vnet list --resource-group $resourceGroupName --query "[].{Name:name}" -o tsv)
+    wait    # wait for the vnet list
+
+    for vnet in $vnets
+    do 
+#----------
+        ### detach nsg from each subnet and delete every subnet of the Spoke vnet
+        if (( $deleteFLG == 1 ))
+        then
+            echo "Getting subnet list in the resource group: "$resourceGroupName""
+            subnets=$(az network vnet subnet list --resource-group $resourceGroupName --vnet-name $vnet --query "[].{Name:name}" -o tsv)
+
+            # detach nsg from each subnet
+            for subnet in $subnets
+            do
+                echo "Detaching nsg from subnet: $subnet"
+                az network vnet subnet update --resource-group $resourceGroupName --vnet-name $vnet --name $subnet --network-security-group null
+                    wait    # wait for the subnet update
+                echo "Detached nsg from subnet: $subnet"
+            done
+        fi
+    done
+fi
 
 #--- delete all nsgs -------
 echo "Start deleting all nsgs"
@@ -22,7 +52,7 @@ then
     for id in ${nsgs[@]}
     do
         echo "Deleting NSG with Id: "$id
-        az network nsg delete --ids $id --yes
+        az network nsg delete --ids $id
         wait    # wait for the nsg deletion
         echo "Deleted NSG with Id: "$id
     done
@@ -40,7 +70,7 @@ then
     do
         echo "Deleting VM with Id: "$id
         az vm delete --ids $id --yes
-        wait    # wait for the nsg deletion
+        wait 
         echo "Deleted VM with Id: "$id
     done
 fi
@@ -79,25 +109,46 @@ then
     done
 fi
 
-: '
-#--- Deletet SQL database and server ---
-echo "Start deleting all database and sql server"
+#--- Deletet SQL database ---
+echo "Start deleting all databases from all sql servers"
 SeleteFLG=1
 if ((deleteFLG == 1))
 then
-    echo "Getting sql db list"
-    dbs=$(az sql db list --server "bicep-poc-sqlserver" --query "[?resourceGroup=='$resourceGroupName'].id" -o tsv)
+    echo "Getting sql server list"
+    servers=$(az sql server list --resource-group $resourceGroupName --query "[].{Name:name}" -o tsv)
 
-    for id in ${dbs[@]}
+    for name in ${servers[@]}
     do 
-        echo "Deleting sqldatabase with Id: "$id
-        az sql db delete --ids $id --yes
-        wait   # wait for the disk deletion
-        echo "Deleted sqldatabase with Id: "$id
-    done
+        echo "Getting sql db list from the sql server"
+        dbs=$(az sql db list --server $name --resource-group $resourceGroupName --query "[].id" -o tsv)
 
+        for id in ${dbs[@]}
+        do
+            echo "Deleting sqldatabase with Id: "$id
+            az sql db delete --ids $id --yes
+            wait   # wait for the disk deletion
+            echo "Deleted sqldatabase with Id: "$id
+        done
+    done
 fi
-' 
+
+#--- Deletet SQL Server ---
+echo "Start deleting sql servers"
+SeleteFLG=1
+if ((deleteFLG == 1))
+then
+    echo "Getting sql server list"
+    servers=$(az sql server list --resource-group $resourceGroupName --query "[].id" -o tsv)
+
+    for id in ${servers[@]}
+    do
+            echo "Deleting sql server with Id: "$id
+            az sql server delete --ids $id --yes
+            wait   # wait for the disk deletion
+            echo "Deleted sql server with Id: "$id    
+    done
+fi
+
 
 : '
 deleteFLG=1
@@ -127,11 +178,10 @@ then
         fi
     done
 fi
-
-
-#az network vnet delete --name $hubvnetName --resource-group $resourceGroupName --subscription $subscriptionName
-#wait    # wait for the vnet deletion
-#az network vnet delete --name $spokevnetName --resource-group $resourceGroupName --subscription $subscriptionName
-#wait    # wait for the vnet deletion
-
 '
+wait
+
+az network vnet delete --name $hubvnetName --resource-group $resourceGroupName --subscription $subscriptionName
+wait    # wait for the vnet deletion
+az network vnet delete --name $spokevnetName --resource-group $resourceGroupName --subscription $subscriptionName
+wait    # wait for the vnet deletion

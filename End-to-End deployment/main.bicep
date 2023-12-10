@@ -60,8 +60,8 @@ param ExistHubVnet bool = true
 param ExistSpokeVnet bool = true
 param ExistVnetPeering bool = true
 param ExistVM bool = true
-param ExistSQLServer bool = false
-param ExistBastion bool = false
+param ExistSQLServer bool = true
+param ExistBastion bool = true
 //-------
 //-------
 //------- Program starts here -------
@@ -102,7 +102,7 @@ module createVNetPeering './modules/3.vnetPeering.bicep' = if(ExistVnetPeering) 
 }
 
 // 4. create a virtual machine in the spoke virtual network
-module createVM './modules/5.virtualMachine.bicep' = [for i in vmIndex: if(ExistVM) {
+module createVM './modules/4.virtualMachine.bicep' = [for i in vmIndex: if(ExistVM) {
   name: 'VM${i}'
   params: {
     location: location
@@ -118,7 +118,7 @@ module createVM './modules/5.virtualMachine.bicep' = [for i in vmIndex: if(Exist
 }]
 
 // 5. create a SQL Server and a SQL Database
-module createSQLServer './modules/6.sqlServer&Database.bicep' = if(ExistSQLServer) {
+module createSQLServer './modules/5.sqlServer&Database.bicep' = if(ExistSQLServer) {
 name: 'createSQLServer'
 params: {
   location: location
@@ -128,7 +128,7 @@ params: {
 }
 
 // 6. create a bastion subnet in the hub virtual network
-module createBastion './modules/4.bastion.bicep' = if(ExistBastion) {
+module createBastion './modules/6.bastion.bicep' = if(ExistBastion) {
   name: 'createBastion'
   params: {
     location: location
