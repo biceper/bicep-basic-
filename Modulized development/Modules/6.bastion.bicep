@@ -17,10 +17,12 @@ resource hubVnet 'Microsoft.Network/virtualNetworks@2023-05-01' existing = {
   name: vnetName
 }
 
+/*
 resource bastionSubnetHubVnet 'Microsoft.Network/virtualNetworks/subnets@2023-05-01' existing = {
   name: subnetName
   parent: hubVnet
 }
+*/
 
 //========= Deploy resources =========
 //create a bastion subnet in the Hub virtual network
@@ -54,7 +56,7 @@ resource bastionHost 'Microsoft.Network/bastionHosts@2023-05-01' = {
   name: bastionName
   location: location
   dependsOn: [
-    bastionSubnetHubVnet
+    subnetOfBastion
     publicIp
   ]
   sku: {
@@ -72,7 +74,7 @@ resource bastionHost 'Microsoft.Network/bastionHosts@2023-05-01' = {
         name: 'bastionIpConfig'
         properties: {
           subnet: {
-            id: bastionSubnetHubVnet.id
+            id: subnetOfBastion.id
           }
           publicIPAddress: {
             id: publicIp.id
@@ -82,6 +84,7 @@ resource bastionHost 'Microsoft.Network/bastionHosts@2023-05-01' = {
     ]
   }
 }
+
 
 output bastionName string = bastionHost.name
 output bastionId string = bastionHost.id
