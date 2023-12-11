@@ -76,6 +76,7 @@ resource hubVnet 'Microsoft.Network/virtualNetworks@2023-05-01' = {
   }
 }
 
+//---------
 // 2. Create a spoke virtual network
 resource spokeVnet 'Microsoft.Network/virtualNetworks@2023-05-01' = {
   name: vnetNameSpk
@@ -104,8 +105,9 @@ resource spokeVnet 'Microsoft.Network/virtualNetworks@2023-05-01' = {
   }
 }
 
+//---------
 // 3. Create a virtual network peering between the hub and spoke virtual networks
-// Create a virtual network peering from the hub virtual network to the spoke virtual network
+// 3-1.Create a virtual network peering from the hub virtual network to the spoke virtual network
 resource hubToSpokePeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2023-05-01' = {
   name:   'hubToSpokePeering'
   parent: hubVnet
@@ -121,7 +123,7 @@ resource hubToSpokePeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeer
   }
 }
 
-// Create a virtual network peering from the spoke virtual network to the hub virtual network
+// 3-2.Create a virtual network peering from the spoke virtual network to the hub virtual network
 resource spokeToHubPeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2023-05-01' = {
   name:  'spokeToHubPeering'
   dependsOn:[hubVnet, spokeVnet]
@@ -138,6 +140,171 @@ resource spokeToHubPeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeer
 }
 
 //---------
+// 4. Create a virtual machine in the spoke virtual network
+// 4-1. get the subnet id of the spoke virtual network
+resource subnetspk01 'Microsoft.Network/virtualNetworks/subnets@2023-05-01' existing = {
+  name: subnetName1Spk
+  parent: spokeVnet
+}
+
+// 4-2. create network interfaces in the subnet (Loop for 3 times)
+resource vmWindowsNic 'Microsoft.Network/networkInterfaces@2023-05-01' = [for i in vmIndex:{
+  name: 'Nic-${vmName[i]}'
+  location: location
+  dependsOn: [spokeVnet, subnetspk01]
+  properties: {
+    ipConfigurations: [
+      {
+        name: 'Nic-${vmComputerName[i]}'
+        properties: {
+          subnet: {
+            id: subnetspk01.id
+          }
+          privateIPAllocationMethod: 'Dynamic'
+        }
+      }
+    ]
+  }
+}]
+
+// 4-3. deploy virtual machines (Loop for 3 times)
+resource createVM 'Microsoft.Compute/virtualMachines@2023-07-01' = [for i in vmIndex:{
+  name: vmName[i]
+  location: location
+  dependsOn: [
+    vmWindowsNic[i]
+  ]
+  properties: {
+    hardwareProfile: {
+      vmSize: vmSize
+    }
+    storageProfile: {
+      imageReference: {
+        publisher: 'MicrosoftVisualStudio'
+        offer: 'Windows'
+        sku: vmOSVersion
+        version: 'latest'
+      }
+      osDisk: {
+        createOption: 'FromImage'
+        caching: 'ReadWrite'
+        managedDisk: {
+          storageAccountType: 'Premium_LRS'
+        }
+      }
+    }
+    osProfile: {
+      computerName: vmComputerName[i]
+      adminUsername: adun
+      adminPassword: adps
+      windowsConfiguration: {
+        provisionVMAgent: true
+        enableAutomaticUpdates: true
+      }
+    }
+    networkProfile: {
+      networkInterfaces: [
+        {
+          id: vmWindowsNic[i].id
+          properties: {
+            primary: true
+          }
+        }
+      ]
+    }
+  }
+}]
+
+//---------
+// 5. create a SQL Server and a SQL Database
+// 5-1. create a SQL Server
+resource sqlServer 'Microsoft.Sql/servers@2021-02-01-preview' = {
+  name: sqlServerName
+  location: location
+  properties: {
+    administratorLogin: 'adminuser'
+    administratorLoginPassword: 'Rduaain08180422'
+  }
+}
+
+// 5-2. create a SQL Database
+resource sqlDatabase 'Microsoft.Sql/servers/databases@2021-02-01-preview' = {
+  name: sqlDatabaseName
+  location: location
+  parent: sqlServer
+  dependsOn: [
+    sqlServer
+  ]
+  sku: {
+    name: 'Standard'
+    tier: 'Standard'
+  }
+}
+
+//---------
+// 6. create a bastion subnet in the hub virtual network
+// 6-1. create a bastion subnet in the hub virtual network
+resource subnetOfBastion 'Microsoft.Network/virtualNetworks/subnets@2023-05-01' = {
+  name: bastionSubnetName
+  dependsOn: [
+    hubVnet
+  ]
+  parent:hubVnet
+  properties: {
+    addressPrefix: ipAddressPrefixBastionSubnet
+  }
+}
+
+// 6-2. create a public IP address for the bastion host
+resource publicIp 'Microsoft.Network/publicIPAddresses@2021-02-01' = {
+  name: publicIpName
+  location: location
+  properties: {
+    publicIPAllocationMethod: publicIpAllocationMethod
+    publicIPAddressVersion: publicIpAddressVersion
+  }
+  sku: {
+    name: publicIpSkuName
+    tier: publicIpSkuTier
+  }
+}
+
+// 6-3. create a bastion host in the bastion subnet
+resource bastionHost 'Microsoft.Network/bastionHosts@2023-05-01' = {
+  name: bastionName
+  location: location
+  dependsOn: [
+    subnetOfBastion
+    publicIp
+  ]
+  sku: {
+    name: 'Standard'
+  }
+  properties: {
+    disableCopyPaste: false
+    enableFileCopy: true
+    enableIpConnect: false
+    enableKerberos: false
+    enableShareableLink: false
+    enableTunneling: false
+    ipConfigurations: [
+      {
+        name: 'bastionIpConfig'
+        properties: {
+          subnet: {
+            id: subnetOfBastion.id
+          }
+          publicIPAddress: {
+            id: publicIp.id
+          }
+        }
+      }
+    ]
+  }
+}
+
+
+//---------
 //---------
 //---------
 //---------
@@ -150,48 +317,7 @@ resource spokeToHubPeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeer
 
 /*
 
-// 4. create a virtual machine in the spoke virtual network
-module createVM './modules/4.virtualMachine.bicep' = [for i in vmIndex: if(ExistVM) {
-  name: 'VM${i}'
-  params: {
-    location: location
-    vnetName: vnetNameSpk
-    subnetName: subnetName1Spk
-    vmName: vmName[i]
-    vmSize: vmSize
-    adminUsername: adun
-    adminPassword: adps
-    vmComputerName: vmComputerName[i]
-    vmOSVersion: vmOSVersion
-  }
-}]
 
-// 5. create a SQL Server and a SQL Database
-module createSQLServer './modules/5.sqlServer&Database.bicep' = if(ExistSQLServer) {
-name: 'createSQLServer'
-params: {
-  location: location
-  sqlServerName: sqlServerName
-  sqlDatabaseName: sqlDatabaseName
-}
-}
-
-// 6. create a bastion subnet in the hub virtual network
-module createBastion './modules/6.bastion.bicep' = if(ExistBastion) {
-  name: 'createBastion'
-  params: {
-    location: location
-    vnetName: vnetNameHub
-    subnetName: bastionSubnetName
-    ipAddressPrefix:ipAddressPrefixBastionSubnet
-    publicIpAllocationMethod: publicIpAllocationMethod
-    publicIpAddressVersion: publicIpAddressVersion
-    publicIpSkuName: publicIpSkuName
-    publicIpSkuTier: publicIpSkuTier
-    publicIpName: publicIpName
-    bastionName: bastionName
-  }
-}
 
 
 //---EOF----
