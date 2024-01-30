@@ -25,9 +25,9 @@ resource tmpSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-05-01' existi
 resource VmWindowsNic 'Microsoft.Network/networkInterfaces@2023-05-01' = {
   name: 'Nic-${vmName}'
   location: location
-  dependsOn: [
-    tmpSubnet
-  ]
+  //dependsOn: [
+  //  tmpSubnet
+  //]
   properties: {
     ipConfigurations: [
       {

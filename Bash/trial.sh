@@ -1,9 +1,7 @@
-
 subscriptionName="Skaneshiro-external-sub-1"
 resourceGroupName="Bicep-fundermental-resourcegroup"
 hubvnetName="poc-Hub-Vnet"
 spokevnetName="poc-Spk-Vnet-01"
-
 echo "Start deleting Bastion"
 az network bastion delete --name 'poc-Bastion-Hub' --resource-group $resourceGroupName --subscription $subscriptionName
 wait    # wait for the bastion deletion
@@ -183,37 +181,6 @@ then
             echo " "
     done
 fi
-
-
-: '
-deleteFLG=1
-if (( $deleteFLG == 1 ))
-then
-    vnets=$(az network vnet list --query "[?resourceGroup=='$resourceGroupName'].{Name:name}" -o tsv)
-    wait    # wait for the vnet list
-
-    for vnet in $vnets
-    do 
-#----------
-        ### Disattach nsg from each subnet and delete every subnet of the Spoke vnet
-        if (( $deleteFLG == 1 ))
-        then
-            subnets=$(az network vnet subnet list --resource-group $resourceGroupName --vnet-name $vnet --query "[].{Name:name}" -o tsv)
-
-            # Disattach nsg from each subnet of the Spoke vnet
-            for subnet in $subnets
-            do
-                echo "Detaching subnet from subnet: $subnet"
-                az network vnet subnet update --resource-group $resourceGroupName --vnet-name $vnet --name $subnet --network-security-group null
-                    wait    # wait for the subnet update
-                az network vnet subnet delete --resource-group $resourceGroupName --vnet-name $vnet --name $subnet
-                wait    # wait for the subnet deletion
-                echo "Detached subnet from subnet: $subnet"
-            done
-        fi
-    done
-fi
-'
 wait
 
 az network vnet delete --name $hubvnetName --resource-group $resourceGroupName --subscription $subscriptionName

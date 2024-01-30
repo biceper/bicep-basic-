@@ -23,7 +23,7 @@ param ipAddressPrefixSpk01Subnet02 string = '10.1.1.0/24'
 // - - - Virtual Machine - - -
 @description('Parameters for Virtual Machine1')
 param vmName array  = ['poc-VM-01','poc-VM-02','poc-VM-03']
-param vmSize string = 'Standard_D2s_v3'
+param vmSize string = 'Standard_B2s'
 @secure()
 param adun string = 'adminuser'
 @secure()
