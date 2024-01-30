@@ -156,5 +156,4 @@ module createBastion './modules/6.bastion.bicep' = if(ExistBastion) {
   }
 }
 
-
 //---EOF----
