@@ -1,6 +1,6 @@
 using './main.bicep'
 
-param vnetNameHub = 'poc-Hub-Vnet'
+param vnetNameHub = 'poc-Hub1-Vnet'
 param ipAddressPrefixHub = [
   '10.0.0.0/16'
 ]
@@ -39,12 +39,13 @@ param vmIndex = [
   1
   2
 ]
-param sqlServerName = 'bicep-poc-sqlserver'
-param sqlDatabaseName = 'bicep-poc-sqldatabase'
+
+// --- ユニークである必要がある --- //
+param sqlServerName = 'bicep-poc-sqlserver3'
+param sqlDatabaseName = 'bicep-poc-sqldatabase3'
 param ExistHubVnet = true
 param ExistSpokeVnet = true
 param ExistVnetPeering = true
 param ExistVM = true
 param ExistSQLServer = true
 param ExistBastion = true
-

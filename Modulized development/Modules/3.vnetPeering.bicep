@@ -31,7 +31,6 @@ resource spokeToHubPeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeer
 resource hubToSpokePeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2023-05-01' = {
   name:   'hubToSpokePeering'
   parent: hubVnet
-  dependsOn: [spokeToHubPeering]
   properties: {
     remoteVirtualNetwork: {
       id: vnetSpkVnetID
