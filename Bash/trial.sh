@@ -1,9 +1,7 @@
-
-subscriptionName="skaneshiro-worksubs-02"
-resourceGroupName="Bicep-fundermental-resourcegroup"
-hubvnetName="poc-Hub-Vnet"
-spokevnetName="poc-Spk-Vnet-01"
-
+subscriptionName = "Skaneshiro-external-sub-1"
+resourceGroupName ="Bicep-fundermental-resourcegroup"
+hubvnetName = "poc-Hub-Vnet"
+spokevnetName = "poc-Spk-Vnet-01"
 echo "Start deleting Bastion"
 az network bastion delete --name 'poc-Bastion-Hub' --resource-group $resourceGroupName --subscription $subscriptionName
 wait    # wait for the bastion deletion
@@ -25,7 +23,7 @@ if (( $deleteFLG == 1 ))
 then
     echo "Getting vnet list in the resource group: "$resourceGroupName""
     echo " "
-    vnets=$(az network vnet list --resource-group $resourceGroupName --query "[].{Name:name}" -o tsv)
+    vnets=$(az network vnet list --resource-group $resourceGroupName --subscription $subscriptionName --query "[].{Name:name}" -o tsv)
     wait    # wait for the vnet list
 
     for vnet in $vnets
@@ -36,39 +34,19 @@ then
         then
             echo "Getting subnet list in the resource group: "$resourceGroupName""
             echo " "
-            subnets=$(az network vnet subnet list --resource-group $resourceGroupName --vnet-name $vnet --query "[].{Name:name}" -o tsv)
+            subnets=$(az network vnet subnet list --resource-group $resourceGroupName --subscription $subscriptionName --vnet-name $vnet --query "[].{Name:name}" -o tsv)
 
             # detach nsg from each subnet
             for subnet in $subnets
             do
                 echo "Detaching nsg from subnet: $subnet"
                 echo " "
-                az network vnet subnet update --resource-group $resourceGroupName --vnet-name $vnet --name $subnet --network-security-group null
+                az network vnet subnet update --resource-group $resourceGroupName --subscription $subscriptionName --vnet-name $vnet --name $subnet --network-security-group null
                     wait    # wait for the subnet update
                 echo "Detached nsg from subnet: $subnet"
                 echo " "
             done
         fi
-    done
-fi
-
-#--- delete all nsgs -------
-echo "Start deleting all nsgs"
-deleteFLG=1
-if  (( $deleteFLG == 1 ))
-then
-    echo "Getting nsg list in the resource group: "$resourceGroupName""
-    echo " "
-    nsgs=$(az network nsg list --resource-group $resourceGroupName --query "[].id" -o tsv)
-
-    for id in ${nsgs[@]}
-    do
-        echo "Deleting NSG with Id: "$id
-        echo " "
-        az network nsg delete --ids $id
-        wait    # wait for the nsg deletion
-        echo "Deleted NSG with Id: "$id
-        echo " "
     done
 fi
 
@@ -80,7 +58,7 @@ if  (( $deleteFLG == 1 ))
 then
     echo "Getting vm list in the resource group: "$resourceGroupName""
     echo " "
-    VMs=$(az vm list --resource-group $resourceGroupName --query "[].id" -o tsv)
+    VMs=$(az vm list --resource-group $resourceGroupName --subscription $subscriptionName --query "[].id" -o tsv)
 
     for id in ${VMs[@]}
     do
@@ -101,7 +79,7 @@ if  (( $deleteFLG == 1 ))
 then
     echo "Getting nig list in the resource group: "$resourceGroupName""
     echo " "
-    NIGs=$(az network nic list --resource-group $resourceGroupName --query "[].id" -o tsv)
+    NIGs=$(az network nic list --resource-group $resourceGroupName --subscription $subscriptionName --query "[].id" -o tsv)
 
     for id in ${NIGs[@]}
     do
@@ -114,6 +92,26 @@ then
     done
 fi
 
+#--- delete all nsgs -------
+echo "Start deleting all nsgs"
+deleteFLG=1
+if  (( $deleteFLG == 1 ))
+then
+    echo "Getting nsg list in the resource group: "$resourceGroupName""
+    echo " "
+    nsgs=$(az network nsg list --resource-group $resourceGroupName --subscription $subscriptionName --query "[].id" -o tsv)
+
+    for id in ${nsgs[@]}
+    do
+        echo "Deleting NSG with Id: "$id
+        echo " "
+        az network nsg delete --ids $id
+        wait    # wait for the nsg deletion
+        echo "Deleted NSG with Id: "$id
+        echo " "
+    done
+fi
+
 #--- delete all disks -------
 echo "Start deleting all disks"
 echo " "
@@ -122,7 +120,7 @@ if ((deleteFLG == 1))
 then
     echo "Getting disk list in the resource group: "$resourceGroupName""
     echo " "
-    disks=$(az disk list --resource-group $resourceGroupName --query "[].id" -o tsv)
+    disks=$(az disk list --resource-group $resourceGroupName --subscription $subscriptionName --query "[].id" -o tsv)
 
     for id in ${disks[@]}
     do 
@@ -143,13 +141,13 @@ if ((deleteFLG == 1))
 then
     echo "Getting sql server list"
     echo " "
-    servers=$(az sql server list --resource-group $resourceGroupName --query "[].{Name:name}" -o tsv)
+    servers=$(az sql server list --resource-group $resourceGroupName --subscription $subscriptionName --query "[].{Name:name}" -o tsv)
 
     for name in ${servers[@]}
     do 
         echo "Getting sql db list from the sql server"
         echo " "
-        dbs=$(az sql db list --server $name --resource-group $resourceGroupName --query "[].id" -o tsv)
+        dbs=$(az sql db list --server $name --resource-group $resourceGroupName --subscription $subscriptionName --query "[].id" -o tsv)
 
         for id in ${dbs[@]}
         do
@@ -171,7 +169,7 @@ if ((deleteFLG == 1))
 then
     echo "Getting sql server list"
     echo " "
-    servers=$(az sql server list --resource-group $resourceGroupName --query "[].id" -o tsv)
+    servers=$(az sql server list --resource-group $resourceGroupName --subscription $subscriptionName --query "[].id" -o tsv)
 
     for id in ${servers[@]}
     do
@@ -183,37 +181,6 @@ then
             echo " "
     done
 fi
-
-
-: '
-deleteFLG=1
-if (( $deleteFLG == 1 ))
-then
-    vnets=$(az network vnet list --query "[?resourceGroup=='$resourceGroupName'].{Name:name}" -o tsv)
-    wait    # wait for the vnet list
-
-    for vnet in $vnets
-    do 
-#----------
-        ### Disattach nsg from each subnet and delete every subnet of the Spoke vnet
-        if (( $deleteFLG == 1 ))
-        then
-            subnets=$(az network vnet subnet list --resource-group $resourceGroupName --vnet-name $vnet --query "[].{Name:name}" -o tsv)
-
-            # Disattach nsg from each subnet of the Spoke vnet
-            for subnet in $subnets
-            do
-                echo "Detaching subnet from subnet: $subnet"
-                az network vnet subnet update --resource-group $resourceGroupName --vnet-name $vnet --name $subnet --network-security-group null
-                    wait    # wait for the subnet update
-                az network vnet subnet delete --resource-group $resourceGroupName --vnet-name $vnet --name $subnet
-                wait    # wait for the subnet deletion
-                echo "Detached subnet from subnet: $subnet"
-            done
-        fi
-    done
-fi
-'
 wait
 
 az network vnet delete --name $hubvnetName --resource-group $resourceGroupName --subscription $subscriptionName

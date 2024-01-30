@@ -41,7 +41,7 @@ param bastionName string = 'poc-Bastion-Hub'
 // - - - Virtual Machine - - -
 @description('Parameters for Virtual Machine1')
 param vmName array  = ['poc-VM-01','poc-VM-02','poc-VM-03']
-param vmSize string = 'Standard_D2s_v3'
+param vmSize string = 'Standard_B2s'
 param adun string = 'adminuser'
 param adps string = 'P@ssw0rd1234'
 param vmComputerName array = ['poc-VM-11','poc-VM-12','poc-VM-13']
@@ -93,17 +93,24 @@ module createSpokeVNet './modules/2.spoke-vnet.bicep' = if(ExistSpokeVnet) {
 // 3. Create a virtual network peering between the hub and spoke virtual networks
 module createVNetPeering './modules/3.vnetPeering.bicep' = if(ExistVnetPeering) {
   name: 'createVnetPeering'
+  dependsOn: [
+    createHubVNet
+    createSpokeVNet
+  ]
   params: {
-    vnetNameHub: createHubVNet.outputs.hubVnetName
-    vnetNameSpk: createSpokeVNet.outputs.spkVnetName
-    vnetHubVnetID:createHubVNet.outputs.hubVnetId
-    vnetSpkVnetID:createSpokeVNet.outputs.spkVnetId
+    vnetNameHub: createHubVNet.outputs.ophubVnetName
+    vnetNameSpk: createSpokeVNet.outputs.opSpkVnetName
+    vnetHubVnetID:createHubVNet.outputs.ophubVnetId
+    vnetSpkVnetID:createSpokeVNet.outputs.opSpkVnetId
   }
 }
 
 // 4. create a virtual machine in the spoke virtual network
 module createVM './modules/4.virtualMachine.bicep' = [for i in vmIndex: if(ExistVM) {
   name: 'VM${i}'
+  dependsOn: [
+    createSpokeVNet
+  ]
   params: {
     location: location
     vnetName: vnetNameSpk
@@ -130,9 +137,12 @@ params: {
 // 6. create a bastion subnet in the hub virtual network
 module createBastion './modules/6.bastion.bicep' = if(ExistBastion) {
   name: 'createBastion'
+  dependsOn: [
+    createHubVNet
+  ]
   params: {
     location: location
-    vnetName: vnetNameHub
+    vnetName: createHubVNet.outputs.ophubVnetName
     subnetName: bastionSubnetName
     ipAddressPrefix:ipAddressPrefixBastionSubnet
     publicIpAllocationMethod: publicIpAllocationMethod

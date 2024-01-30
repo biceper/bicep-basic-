@@ -28,9 +28,9 @@ resource bastionSubnetHubVnet 'Microsoft.Network/virtualNetworks/subnets@2023-05
 //create a bastion subnet in the Hub virtual network
 resource subnetOfBastion 'Microsoft.Network/virtualNetworks/subnets@2023-05-01' = {
   name: subnetName
-  dependsOn: [
-    hubVnet
-  ]
+//  dependsOn: [
+//    hubVnet
+//  ]
   parent:hubVnet
   properties: {
     addressPrefix: ipAddressPrefix

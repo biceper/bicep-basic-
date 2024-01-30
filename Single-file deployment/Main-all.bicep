@@ -23,15 +23,18 @@ param ipAddressPrefixSpk01Subnet02 string = '10.1.1.0/24'
 // - - - Virtual Machine - - -
 @description('Parameters for Virtual Machine1')
 param vmName array  = ['poc-VM-01','poc-VM-02','poc-VM-03']
-param vmSize string = 'Standard_D2s_v3'
+param vmSize string = 'Standard_B2s'
+@secure()
 param adun string = 'adminuser'
+@secure()
 param adps string = 'P@ssw0rd1234'
+
 param vmComputerName array = ['poc-VM-11','poc-VM-12','poc-VM-13']
 param vmOSVersion string = 'Windows-10-N-x64'
 param vmIndex array = [0,1,2]
 // - - - SQL Server - - -
 @description('Parameters for SQL Server')
-param sqlServerName string = 'bicep-poc-sqlserver'
+param sqlServerName string = 'bicep-poc-sqlserver1'
 param sqlDatabaseName string = 'bicep-poc-sqldatabase'
 // - - - Public IP(Bastion) - - -
 @description('Parameters for Public IP(Bastion)')
