@@ -139,6 +139,8 @@ module createBastion './modules/6.bastion.bicep' = if(ExistBastion) {
   name: 'createBastion'
   dependsOn: [
     createHubVNet
+    createSpokeVNet
+    createVNetPeering
   ]
   params: {
     location: location
