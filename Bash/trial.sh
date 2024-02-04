@@ -1,7 +1,7 @@
-subscriptionName = "Skaneshiro-external-sub-1"
-resourceGroupName ="Bicep-fundermental-resourcegroup"
-hubvnetName = "poc-Hub-Vnet"
-spokevnetName = "poc-Spk-Vnet-01"
+subscriptionName="Skaneshiro-external-sub-1"
+resourceGroupName="Bicep-fundermental-resourcegroup"
+hubvnetName="poc-Hub-Vnet"
+spokevnetName="poc-Spk-Vnet-01"
 echo "Start deleting Bastion"
 az network bastion delete --name 'poc-Bastion-Hub' --resource-group $resourceGroupName --subscription $subscriptionName
 wait    # wait for the bastion deletion
