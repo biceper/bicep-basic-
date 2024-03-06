@@ -50,26 +50,28 @@ param ipAddressPrefixBastionSubnet string = '10.0.0.0/26'
 param bastionName string = 'poc-Bastion-Hub'
 // - - - Storage Account - - -
 @description('Parameters for Storage Account')
-param storageAccountName string = 'poc-storageaccount'
+param storageAccountName string = 'pocstorageaccount01'
 // - - - Log Analytics - - -
 @description('Parameters for Log Analytics')
-param logAnalyticsWorkspace string = 'poc-loganalytics'
+param logAnalyticsWorkspace string = 'pocloganalytics'
 
 //-------
 //-------
 //------- Program starts here -------
-resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2021-12-01-preview' = {
-  name: logAnalyticsWorkspace
-}
 
-resource storageAccount 'Microsoft.Storage/storageAccounts@2022-05-01' = {
-  name: storageAccountName
-  location: location
-  sku: {
-    name: 'Standard_LRS'
-  }
-  kind: 'Storage'
-}
+//*
+// resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2021-12-01-preview' = {
+  name: logAnalyticsWorkspace
+// } 
+
+// resource storageAccount 'Microsoft.Storage/storageAccounts@2022-05-01' = {
+  // name: storageAccountName
+  // location: location
+  // sku: {
+    // name: 'Standard_LRS'
+  // }
+  // kind: 'StorageV2'
+// }
 
 // 1. Create a hub virtual network
 resource hubVNet 'Microsoft.Network/virtualNetworks@2022-05-01' = {
@@ -154,17 +156,17 @@ resource subnetspk01 'Microsoft.Network/virtualNetworks/subnets@2022-05-01' exis
 }
 
 // 4-2. create NSGs for network interfaces
-resource nsg 'Microsoft.Network/networkSecurityGroups@2022-05-01' = [for i in vmIndex:{
-  name: 'nicNSG-${vmName[i]}'
+resource nsg 'Microsoft.Network/networkSecurityGroups@2022-05-01' = {
+  name: 'nicNSG-${subnetspk01.name}'
   location: location
   properties: {
     securityRules: [
       {
-        name: 'AllowSSH'
+        name: 'AllowRDP'
         properties: {
           protocol: 'Tcp'
           sourcePortRange: '*'
-          destinationPortRange: '22'
+          destinationPortRange: '3389'
           sourceAddressPrefix: '*'
           destinationAddressPrefix: '*'
           access: 'Allow'
@@ -174,7 +176,7 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2022-05-01' = [for i in vm
       }
     ]
   }
-}]
+}
 
 // 4-3. create network interfaces in the subnet (Loop for 3 times)
 resource vmWindowsNic 'Microsoft.Network/networkInterfaces@2022-05-01' = [for i in vmIndex:{
@@ -338,10 +340,6 @@ resource bastionHost 'Microsoft.Network/bastionHosts@2022-05-01' = {
     disableCopyPaste: false
     enableFileCopy: true
     enableIpConnect: false
-    enableRemoteJump: false
-    enableSerialConsole: false
-    enableSsh: false
-    enableRdp: true
     enableShareableLink: false
     enableTunneling: false
     ipConfigurations: [
