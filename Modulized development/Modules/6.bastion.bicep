@@ -13,7 +13,7 @@ param publicIpName string
 param bastionName string
 
 //========= Get existing resources =========
-resource hubVnet 'Microsoft.Network/virtualNetworks@2023-05-01' existing = {
+resource hubVnet 'Microsoft.Network/virtualNetworks@2022-05-01' existing = {
   name: vnetName
 }
 
@@ -26,7 +26,7 @@ resource bastionSubnetHubVnet 'Microsoft.Network/virtualNetworks/subnets@2023-05
 
 //========= Deploy resources =========
 //create a bastion subnet in the Hub virtual network
-resource subnetOfBastion 'Microsoft.Network/virtualNetworks/subnets@2023-05-01' = {
+resource subnetOfBastion 'Microsoft.Network/virtualNetworks/subnets@2022-05-01' = {
   name: subnetName
 //  dependsOn: [
 //    hubVnet

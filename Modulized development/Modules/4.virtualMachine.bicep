@@ -12,17 +12,17 @@ param adminUsername string
 @secure()
 param adminPassword string
 
-resource tmpSpokeVnet 'Microsoft.Network/virtualNetworks@2023-05-01' existing = {
+resource tmpSpokeVnet 'Microsoft.Network/virtualNetworks@2022-05-01' existing = {
   name: vnetName
 }
 
-resource tmpSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-05-01' existing = {
+resource tmpSubnet 'Microsoft.Network/virtualNetworks/subnets@2022-05-01' existing = {
   name: subnetName
   parent: tmpSpokeVnet
 }
 
 // Create a network interface in the subnet
-resource VmWindowsNic 'Microsoft.Network/networkInterfaces@2023-05-01' = {
+resource VmWindowsNic 'Microsoft.Network/networkInterfaces@2022-05-01' = {
   name: 'Nic-${vmName}'
   location: location
   //dependsOn: [
@@ -44,7 +44,7 @@ resource VmWindowsNic 'Microsoft.Network/networkInterfaces@2023-05-01' = {
 }
 
 // create a virtual machine in the spoke virtual network
-resource createVM 'Microsoft.Compute/virtualMachines@2023-07-01' = {
+resource createVM 'Microsoft.Compute/virtualMachines@2022-08-01' = {
   name: vmName
   location: location
   dependsOn: [

@@ -34,8 +34,8 @@ param vmOSVersion string = 'Windows-10-N-x64'
 param vmIndex array = [0,1,2]
 // - - - SQL Server - - -
 @description('Parameters for SQL Server')
-param sqlServerName string = 'bicep-poc-sqlserver1'
-param sqlDatabaseName string = 'bicep-poc-sqldatabase'
+param sqlServerName string = 'poc-bicep-poc-sqlserver1'
+param sqlDatabaseName string = 'poc-bicep-poc-sqldatabase'
 // - - - Public IP(Bastion) - - -
 @description('Parameters for Public IP(Bastion)')
 param publicIpName string = 'poc-Bastion-PublicIP'
@@ -48,11 +48,31 @@ param publicIpSkuTier string = 'Regional'
 param bastionSubnetName string = 'AzureBastionSubnet'
 param ipAddressPrefixBastionSubnet string = '10.0.0.0/26'
 param bastionName string = 'poc-Bastion-Hub'
+// - - - Storage Account - - -
+@description('Parameters for Storage Account')
+param storageAccountName string = 'poc-storageaccount'
+// - - - Log Analytics - - -
+@description('Parameters for Log Analytics')
+param logAnalyticsWorkspace string = 'poc-loganalytics'
+
 //-------
 //-------
 //------- Program starts here -------
+resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2021-12-01-preview' = {
+  name: logAnalyticsWorkspace
+}
+
+resource storageAccount 'Microsoft.Storage/storageAccounts@2022-05-01' = {
+  name: storageAccountName
+  location: location
+  sku: {
+    name: 'Standard_LRS'
+  }
+  kind: 'Storage'
+}
+
 // 1. Create a hub virtual network
-resource hubVNet 'Microsoft.Network/virtualNetworks@2023-05-01' = {
+resource hubVNet 'Microsoft.Network/virtualNetworks@2022-05-01' = {
   name: vnetNameHub
   location: location
   properties: {
@@ -94,7 +114,7 @@ resource spokeVNet 'Microsoft.Network/virtualNetworks@2023-05-01' = {
 //---------
 // 3. Create a virtual network peering between the hub and spoke virtual networks
 // 3-1.Create a virtual network peering from the hub virtual network to the spoke virtual network
-resource hubToSpokePeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2023-05-01' = {
+resource hubToSpokePeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2022-05-01' = {
   name:   'hubToSpokePeering'
   parent: hubVNet
   dependsOn: [spokeVNet, hubVNet]
@@ -110,7 +130,7 @@ resource hubToSpokePeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeer
 }
 
 // 3-2.Create a virtual network peering from the spoke virtual network to the hub virtual network
-resource spokeToHubPeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2023-05-01' = {
+resource spokeToHubPeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2022-05-01' = {
   name:  'spokeToHubPeering'
   dependsOn:[hubVNet, spokeVNet]
   parent: spokeVNet
@@ -128,13 +148,13 @@ resource spokeToHubPeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeer
 //---------
 // 4. Create a virtual machine in the spoke virtual network
 // 4-1. get the subnet id of the spoke virtual network
-resource subnetspk01 'Microsoft.Network/virtualNetworks/subnets@2023-05-01' existing = {
+resource subnetspk01 'Microsoft.Network/virtualNetworks/subnets@2022-05-01' existing = {
   name: subnetName1Spk
   parent: spokeVNet
 }
 
 // 4-2. create NSGs for network interfaces
-resource nsg 'Microsoft.Network/networkSecurityGroups@2023-05-01' = [for i in vmIndex:{
+resource nsg 'Microsoft.Network/networkSecurityGroups@2022-05-01' = [for i in vmIndex:{
   name: 'nicNSG-${vmName[i]}'
   location: location
   properties: {
@@ -157,7 +177,7 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2023-05-01' = [for i in vm
 }]
 
 // 4-3. create network interfaces in the subnet (Loop for 3 times)
-resource vmWindowsNic 'Microsoft.Network/networkInterfaces@2023-05-01' = [for i in vmIndex:{
+resource vmWindowsNic 'Microsoft.Network/networkInterfaces@2022-05-01' = [for i in vmIndex:{
   name: 'Nic-${vmName[i]}'
   location: location
   dependsOn: [spokeVNet, subnetspk01]
@@ -180,7 +200,7 @@ resource vmWindowsNic 'Microsoft.Network/networkInterfaces@2023-05-01' = [for i 
 }]
 
 // 4-4. deploy virtual machines (Loop for 3 times)
-resource createVM 'Microsoft.Compute/virtualMachines@2023-07-01' = [for i in vmIndex:{
+resource createVM 'Microsoft.Compute/virtualMachines@2022-08-01' = [for i in vmIndex:{
   name: vmName[i]
   location: location
   dependsOn: [
@@ -227,10 +247,32 @@ resource createVM 'Microsoft.Compute/virtualMachines@2023-07-01' = [for i in vmI
   }
 }]
 
+resource vmDiagnostics 'Microsoft.Insights/diagnosticSettings@2017-05-01-preview' = [for i in vmIndex:{
+  name: 'vmDiagnostics-${vmName[i]}'
+  dependsOn: [
+    createVM[i]
+  ]
+  properties: {
+    workspaceId: logAnalytics.id
+    logs: [
+      {
+        category: 'AuditEvent'
+        enabled: true
+      }
+    ]
+    metrics: [
+      {
+        category: 'AllMetrics'
+        enabled: true
+      }
+    ]
+  }
+}]
+
 //---------
 // 5. create a SQL Server and a SQL Database
 // 5-1. create a SQL Server
-resource sqlServer 'Microsoft.Sql/servers@2023-05-01-preview' = {
+resource sqlServer 'Microsoft.Sql/servers@2022-05-01-preview' = {
   name: sqlServerName
   location: location
   properties: {
@@ -240,7 +282,7 @@ resource sqlServer 'Microsoft.Sql/servers@2023-05-01-preview' = {
 }
 
 // 5-2. create a SQL Database
-resource sqlDatabase 'Microsoft.Sql/servers/databases@2023-05-01-preview' = {
+resource sqlDatabase 'Microsoft.Sql/servers/databases@2022-05-01-preview' = {
   name: sqlDatabaseName
   location: location
   parent: sqlServer
@@ -256,7 +298,7 @@ resource sqlDatabase 'Microsoft.Sql/servers/databases@2023-05-01-preview' = {
 //---------
 // 6. create a bastion subnet in the hub virtual network
 // 6-1. create a bastion subnet in the hub virtual network
-resource subnetOfBastion 'Microsoft.Network/virtualNetworks/subnets@2023-05-01' = {
+resource subnetOfBastion 'Microsoft.Network/virtualNetworks/subnets@2022-05-01' = {
   name: bastionSubnetName
   dependsOn: [
     hubVNet
@@ -268,7 +310,7 @@ resource subnetOfBastion 'Microsoft.Network/virtualNetworks/subnets@2023-05-01' 
 }
 
 // 6-2. create a public IP address for the bastion host
-resource publicIp 'Microsoft.Network/publicIPAddresses@2023-05-01' = {
+resource publicIp 'Microsoft.Network/publicIPAddresses@2022-05-01' = {
   name: publicIpName
   location: location
   properties: {
@@ -282,7 +324,7 @@ resource publicIp 'Microsoft.Network/publicIPAddresses@2023-05-01' = {
 }
 
 // 6-3. create a bastion host in the bastion subnet
-resource bastionHost 'Microsoft.Network/bastionHosts@2023-05-01' = {
+resource bastionHost 'Microsoft.Network/bastionHosts@2022-05-01' = {
   name: bastionName
   location: location
   dependsOn: [
@@ -296,7 +338,10 @@ resource bastionHost 'Microsoft.Network/bastionHosts@2023-05-01' = {
     disableCopyPaste: false
     enableFileCopy: true
     enableIpConnect: false
-    enableKerberos: false
+    enableRemoteJump: false
+    enableSerialConsole: false
+    enableSsh: false
+    enableRdp: true
     enableShareableLink: false
     enableTunneling: false
     ipConfigurations: [
