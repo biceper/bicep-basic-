@@ -16,20 +16,20 @@ param ipAddressPrefixHub array = ['10.0.0.0/16']
 @description('Parameters for Spoke Virtual Network')
 param vnetNameSpk string = 'poc-Spk-Vnet-01'
 param ipAddressPrefixSpk array = ['10.1.0.0/16']
-param subnetName1Spk string = 'poc-spk01-subnet01'
-param subnetName2Spk string = 'poc-spk01-subnet02'
+param subnetName1Spk string = 'poc-Spk01-subnet01'
+param subnetName2Spk string = 'poc-Spk01-subnet02'
 param ipAddressPrefixSpk01Subnet01 string = '10.1.0.0/24'
 param ipAddressPrefixSpk01Subnet02 string = '10.1.1.0/24'
 // - - - Virtual Machine - - -
 @description('Parameters for Virtual Machine1')
-param vmName array  = ['poc-VM-01','poc-VM-02','poc-VM-03']
+var vmName = 'poc-VM-01'
 param vmSize string = 'Standard_B2s'
 @secure()
 param adun string = 'adminuser'
 @secure()
 param adps string = 'P@ssw0rd1234'
 
-param vmComputerName array = ['poc-VM-11','poc-VM-12','poc-VM-13']
+var vmComputerName = 'poc-VM-11'
 param vmOSVersion string = 'Windows-10-N-x64'
 param vmIndex array = [0,1,2]
 // - - - SQL Server - - -
@@ -70,8 +70,8 @@ resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2021-12-01-previ
   }
 } 
 
-resource storageAccount 'Microsoft.Storage/storageAccounts@2022-05-01' = {
-  name: storageAccountName
+resource diagstorageAccount 'Microsoft.Storage/storageAccounts@2022-05-01' = {
+  name: '${storageAccountName}diag'
   location: location
   sku: {
     name: 'Standard_LRS'
@@ -184,18 +184,26 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2022-05-01' = {
   }
 }
 
+resource rebuildsubnet 'Microsoft.Network/virtualNetworks/subnets@2023-09-01' = {
+  name: subnetspk01.name
+  parent: spokeVNet
+  properties: {
+    addressPrefix: ipAddressPrefixSpk01Subnet01
+    networkSecurityGroup: {
+      id: nsg.id
+    }
+  }
+}
+
 // 4-3. create network interfaces in the subnet (Loop for 3 times)
-resource vmWindowsNic 'Microsoft.Network/networkInterfaces@2022-05-01' = [for i in vmIndex:{
-  name: 'Nic-${vmName[i]}'
+resource vmWindowsNic 'Microsoft.Network/networkInterfaces@2022-05-01' = {
+  name: 'Nic-${vmName}'
   location: location
   dependsOn: [spokeVNet, subnetspk01]
   properties: {
-    networkSecurityGroup: {
-      id: nsg[i].id
-    }
     ipConfigurations: [
       {
-        name: 'Nic-${vmComputerName[i]}'
+        name: 'Nic-${vmComputerName}'
         properties: {
           subnet: {
             id: subnetspk01.id
@@ -205,14 +213,15 @@ resource vmWindowsNic 'Microsoft.Network/networkInterfaces@2022-05-01' = [for i 
       } 
     ]
   }
-}]
+}
 
 // 4-4. deploy virtual machines (Loop for 3 times)
-resource createVM 'Microsoft.Compute/virtualMachines@2022-08-01' = [for i in vmIndex:{
-  name: vmName[i]
+resource createVM 'Microsoft.Compute/virtualMachines@2022-08-01' = {
+  name: vmName
   location: location
   dependsOn: [
-    vmWindowsNic[i]
+    vmWindowsNic
+    diagstorageAccount
   ]
   properties: {
     hardwareProfile: {
@@ -232,9 +241,10 @@ resource createVM 'Microsoft.Compute/virtualMachines@2022-08-01' = [for i in vmI
           storageAccountType: 'Premium_LRS'
         }
       }
+      dataDisks: []
     }
     osProfile: {
-      computerName: vmComputerName[i]
+      computerName: vmComputerName
       adminUsername: adun
       adminPassword: adps
       windowsConfiguration: {
@@ -245,31 +255,60 @@ resource createVM 'Microsoft.Compute/virtualMachines@2022-08-01' = [for i in vmI
     networkProfile: {
       networkInterfaces: [
         {
-          id: vmWindowsNic[i].id
+          id: vmWindowsNic.id
           properties: {
             primary: true
           }
         }
       ]
     }
-  }
-}]
-
-
-resource vmDiagnostics 'Microsoft.Insights/diagnosticSettings@2017-05-01-preview' = [for i in vmIndex:{
-  name: 'vmDiagnostics-${vmName[i]}'
-  dependsOn: [
-    createVM[i]
-  ]
-  properties: {
-    logAnalyticsDestinationType: logAnalytics.id
-    storageAccountId: storageAccount.id
-    logs: [
-      {
-        category: 'AuditEvent'
+    diagnosticsProfile: {
+      bootDiagnostics: {
         enabled: true
+        storageUri: diagstorageAccount.properties.primaryEndpoints.blob
       }
-    ]
+    }
+  }
+}
+
+// resource vmExtension 'Microsoft.Compute/virtualMachines/extensions@2022-08-01' = {
+  // name: '${createVM.name}extension'
+  // location: location
+  // parent: createVM
+  // properties: {
+    // autoUpgradeMinorVersion: true
+    // enableAutomaticUpgrade: false
+    // instanceView: {
+      // name: 'CustomScriptExtension'
+      // type: 'CustomScriptExtension'
+      // typeHandlerVersion: '1.10'
+      // statuses:[
+        // {
+          // code: 'ProvisioningState/succeeded'
+          // level: 'Info'
+          // displayStatus: 'Provisioning succeeded'
+          // message: 'Provisioning succeeded'
+        // }
+      // ]
+      // substatuses: [
+        // {
+          // code: 'ProvisioningState/succeeded'
+          // level: 'Info'
+          // displayStatus: 'Provisioning succeeded'
+          // message: 'Provisioning succeeded'
+        // }
+      // ]
+    // }
+    // publisher: 'Microsoft.Compute'
+  // }
+// }
+
+resource vmdiagnostic 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  scope: createVM
+  name: '${createVM.name}diag'
+  properties: {
+    workspaceId: logAnalytics.id
+    storageAccountId: diagstorageAccount.id
     metrics: [
       {
         category: 'AllMetrics'
@@ -277,93 +316,4 @@ resource vmDiagnostics 'Microsoft.Insights/diagnosticSettings@2017-05-01-preview
       }
     ]
   }
-}]
-
-//---------
-// 5. create a SQL Server and a SQL Database
-// 5-1. create a SQL Server
-resource sqlServer 'Microsoft.Sql/servers@2022-05-01-preview' = {
-  name: sqlServerName
-  location: location
-  properties: {
-    administratorLogin: 'adminuser'
-    administratorLoginPassword: 'Rduaain08180422'
-  }
 }
-
-// 5-2. create a SQL Database
-resource sqlDatabase 'Microsoft.Sql/servers/databases@2022-05-01-preview' = {
-  name: sqlDatabaseName
-  location: location
-  parent: sqlServer
-  dependsOn: [
-    sqlServer
-  ]
-  sku: {
-    name: 'Standard'
-    tier: 'Standard'
-  }
-}
-
-//---------
-// 6. create a bastion subnet in the hub virtual network
-// 6-1. create a bastion subnet in the hub virtual network
-resource subnetOfBastion 'Microsoft.Network/virtualNetworks/subnets@2022-05-01' = {
-  name: bastionSubnetName
-  dependsOn: [
-    hubVNet
-  ]
-  parent:hubVNet
-  properties: {
-    addressPrefix: ipAddressPrefixBastionSubnet
-  }
-}
-
-// 6-2. create a public IP address for the bastion host
-resource publicIp 'Microsoft.Network/publicIPAddresses@2022-05-01' = {
-  name: publicIpName
-  location: location
-  properties: {
-    publicIPAllocationMethod: publicIpAllocationMethod
-    publicIPAddressVersion: publicIpAddressVersion
-  }
-  sku: {
-    name: publicIpSkuName
-    tier: publicIpSkuTier
-  }
-}
-
-// 6-3. create a bastion host in the bastion subnet
-resource bastionHost 'Microsoft.Network/bastionHosts@2022-05-01' = {
-  name: bastionName
-  location: location
-  dependsOn: [
-    subnetOfBastion
-    publicIp
-  ]
-  sku: {
-    name: 'Standard'
-  }
-  properties: {
-    disableCopyPaste: false
-    enableFileCopy: true
-    enableIpConnect: false
-    enableShareableLink: false
-    enableTunneling: false
-    ipConfigurations: [
-      {
-        name: 'bastionIpConfig'
-        properties: {
-          subnet: {
-            id: subnetOfBastion.id
-          }
-          publicIPAddress: {
-            id: publicIp.id
-          }
-        }
-      }
-    ]
-  }
-}
-
-//---EOF----

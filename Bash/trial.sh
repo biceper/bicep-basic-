@@ -183,6 +183,30 @@ then
 fi
 wait
 
+#--- delete Log-Analytics -------
+echo "Getting Log Analytics workspace list"
+    items=$(az monitor log-analytics workspace list --resource-group $resourceGroupName --subscription $subscriptionName --query "[].id" -o tsv)
+    for id in ${items[@]}
+    do
+        echo "Deleting Log-Analytics with Id: "$id
+        az monitor log-analytics workspace delete --ids $id --yes
+        wait
+        echo "Deleted Log-Analytics with Id: "$id    
+    done
+wait
+
+#--- delete Storage Account -------
+echo "Getting Storage Account list"
+    echo " "
+    items=$(az storage account list --resource-group $resourceGroupName --subscription $subscriptionName --query "[].id" -o tsv)
+    for id in ${items[@]}
+    do
+        echo "Deleting Storage Account with Id: "$id
+        az storage account delete --ids $id --yes
+        wait
+        echo "Deleted Storage Account with Id: "$id    
+    done
+
 az network vnet delete --name $hubvnetName --resource-group $resourceGroupName --subscription $subscriptionName
 wait    # wait for the vnet deletion
 az network vnet delete --name $spokevnetName --resource-group $resourceGroupName --subscription $subscriptionName
