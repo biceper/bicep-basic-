@@ -60,15 +60,15 @@ param logAnalyticsWorkspace string = 'poc${uniqueString(resourceGroup().id,deplo
 //------- Program starts here -------
 
 //*
-resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2021-12-01-preview' = {
-  name: logAnalyticsWorkspace
-  location: location
-  properties: {
-    sku: {
-      name: 'PerGB2018'
-    }
-  }
-} 
+// resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2021-12-01-preview' = {
+  // name: logAnalyticsWorkspace
+  // location: location
+  // properties: {
+    // sku: {
+      // name: 'PerGB2018'
+    // }
+  // }
+// } 
 
 resource diagstorageAccount 'Microsoft.Storage/storageAccounts@2022-05-01' = {
   name: '${storageAccountName}diag'
@@ -271,49 +271,17 @@ resource createVM 'Microsoft.Compute/virtualMachines@2022-08-01' = {
   }
 }
 
-// resource vmExtension 'Microsoft.Compute/virtualMachines/extensions@2022-08-01' = {
-  // name: '${createVM.name}extension'
-  // location: location
-  // parent: createVM
+// resource vmdiagnostic 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  // scope: createVM
+  // name: '${createVM.name}diag'
   // properties: {
-    // autoUpgradeMinorVersion: true
-    // enableAutomaticUpgrade: false
-    // instanceView: {
-      // name: 'CustomScriptExtension'
-      // type: 'CustomScriptExtension'
-      // typeHandlerVersion: '1.10'
-      // statuses:[
-        // {
-          // code: 'ProvisioningState/succeeded'
-          // level: 'Info'
-          // displayStatus: 'Provisioning succeeded'
-          // message: 'Provisioning succeeded'
-        // }
-      // ]
-      // substatuses: [
-        // {
-          // code: 'ProvisioningState/succeeded'
-          // level: 'Info'
-          // displayStatus: 'Provisioning succeeded'
-          // message: 'Provisioning succeeded'
-        // }
-      // ]
-    // }
-    // publisher: 'Microsoft.Compute'
+    // workspaceId: logAnalytics.id
+    // storageAccountId: diagstorageAccount.id
+    // metrics: [
+      // {
+        // category: 'AllMetrics'
+        // enabled: true
+      // }
+    // ]
   // }
 // }
-
-resource vmdiagnostic 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
-  scope: createVM
-  name: '${createVM.name}diag'
-  properties: {
-    workspaceId: logAnalytics.id
-    storageAccountId: diagstorageAccount.id
-    metrics: [
-      {
-        category: 'AllMetrics'
-        enabled: true
-      }
-    ]
-  }
-}
