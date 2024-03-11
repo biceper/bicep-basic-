@@ -2,6 +2,8 @@ param vnetNameHub string
 param vnetNameSpk string
 param vnetHubVnetID string
 param vnetSpkVnetID string
+param hubToSpokePeeringName string
+param spokeToHubPeeringName string
 
 resource hubVnet 'Microsoft.Network/virtualNetworks@2023-05-01' existing = {
   name: vnetNameHub
@@ -13,7 +15,7 @@ resource spokeVnet 'Microsoft.Network/virtualNetworks@2023-05-01' existing = {
 
 // Create a virtual network peering from the spoke virtual network to the hub virtual network
 resource spokeToHubPeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2023-05-01' = {
-  name:  'spokeToHubPeering'
+  name:  hubToSpokePeeringName
   //dependsOn:[hubVnet, spokeVnet]
   parent: spokeVnet
   properties: {
@@ -29,7 +31,7 @@ resource spokeToHubPeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeer
 
 // Create a virtual network peering from the hub virtual network to the spoke virtual network
 resource hubToSpokePeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2022-05-01' = {
-  name:   'hubToSpokePeering'
+  name:   spokeToHubPeeringName
   parent: hubVnet
   properties: {
     remoteVirtualNetwork: {

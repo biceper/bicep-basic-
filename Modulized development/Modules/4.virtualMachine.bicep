@@ -5,6 +5,7 @@ param vmName string
 param vmSize string
 param vmComputerName string
 param vmOSVersion string
+param storageAccountName string
 
 @secure()
 param adminUsername string
@@ -21,9 +22,19 @@ resource tmpSubnet 'Microsoft.Network/virtualNetworks/subnets@2022-05-01' existi
   parent: tmpSpokeVnet
 }
 
+// Create a storage account
+resource diagstorageAccount 'Microsoft.Storage/storageAccounts@2022-05-01' = {
+  name: storageAccountName
+  location: location
+  sku: {
+    name: 'Standard_LRS'
+  }
+  kind: 'StorageV2'
+}
+
 // Create a network interface in the subnet
 resource VmWindowsNic 'Microsoft.Network/networkInterfaces@2022-05-01' = {
-  name: 'Nic-${vmName}'
+  name: 'poc-NIC-${vmName}'
   location: location
   //dependsOn: [
   //  tmpSubnet
@@ -31,7 +42,7 @@ resource VmWindowsNic 'Microsoft.Network/networkInterfaces@2022-05-01' = {
   properties: {
     ipConfigurations: [
       {
-        name: 'Nic-${vmComputerName}'
+        name: 'poc-NIC-${vmComputerName}'
         properties: {
           subnet: {
             id: tmpSubnet.id
@@ -87,6 +98,12 @@ resource createVM 'Microsoft.Compute/virtualMachines@2022-08-01' = {
           }
         }
       ]
+    }
+    diagnosticsProfile: {
+      bootDiagnostics: {
+        enabled: true
+        storageUri: diagstorageAccount.properties.primaryEndpoints.blob
+      }
     }
   }
 }

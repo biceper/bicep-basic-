@@ -60,19 +60,7 @@ var storageAccountName = 'poc-${uniqueString(resourceGroup().id,deployment().nam
 
 //-------
 //-------
-//------- Program starts here -------
-
-//*
-// 0. Create a storage account
-resource diagstorageAccount 'Microsoft.Storage/storageAccounts@2022-05-01' = {
-  name: storageAccountName
-  location: location
-  sku: {
-    name: 'Standard_LRS'
-  }
-  kind: 'StorageV2'
-}
-
+//------- Program starts here ------
 //---------
 // 1. Create a hub virtual network
 resource hubVNet 'Microsoft.Network/virtualNetworks@2022-05-01' = {
@@ -192,7 +180,17 @@ resource rebuildsubnet 'Microsoft.Network/virtualNetworks/subnets@2023-09-01' = 
 }
 
 // 5. Create a virtual machine in the spoke virtual network
-// 5-1. create network interfaces in the subnet (Loop for 3 times)
+// 5-1. Create a storage account
+resource diagstorageAccount 'Microsoft.Storage/storageAccounts@2022-05-01' = {
+  name: storageAccountName
+  location: location
+  sku: {
+    name: 'Standard_LRS'
+  }
+  kind: 'StorageV2'
+}
+
+// 5-2. create network interfaces in the subnet (Loop for 3 times)
 resource vmWindowsNic 'Microsoft.Network/networkInterfaces@2022-05-01' = [for i in vmIndex:{
   name: 'poc-NIC-${vmName[i]}'
   location: location
@@ -212,7 +210,7 @@ resource vmWindowsNic 'Microsoft.Network/networkInterfaces@2022-05-01' = [for i 
   }
 }]
 
-// 5-2. deploy virtual machines (Loop for 3 times)
+// 5-3. deploy virtual machines (Loop for 3 times)
 resource createVM 'Microsoft.Compute/virtualMachines@2022-08-01' = [for i in vmIndex:{
   name: vmName[i]
   location: location
@@ -256,6 +254,12 @@ resource createVM 'Microsoft.Compute/virtualMachines@2022-08-01' = [for i in vmI
           }
         }
       ]
+    }
+    diagnosticsProfile: {
+      bootDiagnostics: {
+        enabled: true
+        storageUri: diagstorageAccount.properties.primaryEndpoints.blob
+      }
     }
   }
 }]
