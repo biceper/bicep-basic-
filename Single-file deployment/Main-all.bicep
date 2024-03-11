@@ -18,11 +18,11 @@ var spokeToHubPeeringName = 'poc-spoketohubpeering'
 // - - - Spoke Virtual Network - - - 
 @description('Parameters for Spoke Virtual Network')
 var vnetNameSpk = 'poc-Spk-Vnet-01'
-var ipAddressPrefixSpk = '10.1.0.0/16'
+param ipAddressPrefixSpk array = ['10.1.0.0/16']
 var subnetName1Spk = 'poc-spk01-subnet01'
 var subnetName2Spk = 'poc-spk01-subnet02'
-param ipAddressPrefixSpk01Subnet01 array = ['10.1.0.0/24']
-param ipAddressPrefixSpk01Subnet02 array = ['10.1.1.0/24']
+param ipAddressPrefixSpk01Subnet01 string = '10.1.0.0/24'
+param ipAddressPrefixSpk01Subnet02 string = '10.1.1.0/24'
 // - - - Virtual Machine - - -
 @description('Parameters for Virtual Machine1')
 var vmName = ['poc-VM-01','poc-VM-02','poc-VM-03']
@@ -54,11 +54,11 @@ var publicIpSkuTier = 'Regional'
 // - - - Bastion - - -
 @description('Parameters for Bastion')
 var bastionSubnetName = 'AzureBastionSubnet'
-param ipAddressPrefixBastionSubnet array = ['10.0.0.0/26']
+param ipAddressPrefixBastionSubnet string = '10.0.0.0/26'
 var bastionName = 'poc-Bastion-Hub'
 // - - - Storage Account - - -
 @description('Parameters for Storage Account')
-var storageAccountName = 'poc${uniqueString(resourceGroup().id,deployment().name,location)}'
+var storageAccountName = 'poc${uniqueString(resourceGroup().id,deployment().name)}'
 // - - - Log Analytics - - -
 // @description('Parameters for Log Analytics')
 // param logAnalyticsWorkspace string = 'poc-${uniqueString(resourceGroup().id,deployment().name,location)}'
@@ -186,14 +186,14 @@ resource rebuildsubnet 'Microsoft.Network/virtualNetworks/subnets@2023-09-01' = 
 
 // 5. Create a virtual machine in the spoke virtual network
 // 5-1. Create a storage account
-resource diagstorageAccount 'Microsoft.Storage/storageAccounts@2022-05-01' = {
-  name: storageAccountName
+resource diagstorageAccount 'Microsoft.Storage/storageAccounts@2022-05-01' = [for i in vmIndex:{
+  name: '${storageAccountName}${i}'
   location: location
   sku: {
     name: 'Standard_LRS'
   }
   kind: 'StorageV2'
-}
+}]
 
 // 5-2. create network interfaces in the subnet (Loop for 3 times)
 resource vmWindowsNic 'Microsoft.Network/networkInterfaces@2022-05-01' = [for i in vmIndex:{
@@ -263,7 +263,7 @@ resource createVM 'Microsoft.Compute/virtualMachines@2022-08-01' = [for i in vmI
     diagnosticsProfile: {
       bootDiagnostics: {
         enabled: true
-        storageUri: diagstorageAccount.properties.primaryEndpoints.blob
+        storageUri: diagstorageAccount[i].properties.primaryEndpoints.blob
       }
     }
   }

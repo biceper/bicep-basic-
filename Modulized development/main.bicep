@@ -17,11 +17,11 @@ var spokeToHubPeeringName = 'poc-spoketohubpeering'
 // - - - Spoke Virtual Network - - - 
 @description('Parameters for Spoke Virtual Network')
 var vnetNameSpk = 'poc-Spk-Vnet-01'
-var ipAddressPrefixSpk = '10.1.0.0/16'
+var ipAddressPrefixSpk = ['10.1.0.0/16']
 var subnetName1Spk = 'poc-spk01-subnet01'
 var subnetName2Spk = 'poc-spk01-subnet02'
-var ipAddressPrefixSpk01Subnet01 = ['10.1.0.0/24']
-var ipAddressPrefixSpk01Subnet02 = ['10.1.1.0/24']
+var ipAddressPrefixSpk01Subnet01 = '10.1.0.0/24'
+var ipAddressPrefixSpk01Subnet02 = '10.1.1.0/24'
 // - - - Virtual Machine - - -
 @description('Parameters for Virtual Machine1')
 var vmName = ['poc-VM-01','poc-VM-02','poc-VM-03']
@@ -53,7 +53,7 @@ var publicIpSkuTier = 'Regional'
 // - - - Bastion - - -
 @description('Parameters for Bastion')
 var bastionSubnetName = 'AzureBastionSubnet'
-var ipAddressPrefixBastionSubnet = ['10.0.0.0/26']
+var ipAddressPrefixBastionSubnet = '10.0.0.0/26'
 var bastionName = 'poc-Bastion-Hub'
 // - - - Storage Account - - -
 @description('Parameters for Storage Account')
