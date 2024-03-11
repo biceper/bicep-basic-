@@ -3,7 +3,7 @@ param vnetName string
 param ipAddressPrefixes array
 
 // Create a hub virtual network
-resource hubVnet 'Microsoft.Network/virtualNetworks@2023-05-01' = {
+resource hubVnet 'Microsoft.Network/virtualNetworks@2022-05-01' = {
   name: vnetName
   location: location
   properties: {
@@ -15,4 +15,5 @@ resource hubVnet 'Microsoft.Network/virtualNetworks@2023-05-01' = {
 
 output ophubVnetId string = hubVnet.id
 output ophubVnetName string = hubVnet.name
+
 

@@ -5,6 +5,7 @@ param vmName string
 param vmSize string
 param vmComputerName string
 param vmOSVersion string
+param storageAccountName string
 
 @secure()
 param adminUsername string
@@ -12,18 +13,28 @@ param adminUsername string
 @secure()
 param adminPassword string
 
-resource tmpSpokeVnet 'Microsoft.Network/virtualNetworks@2023-05-01' existing = {
+resource tmpSpokeVnet 'Microsoft.Network/virtualNetworks@2022-05-01' existing = {
   name: vnetName
 }
 
-resource tmpSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-05-01' existing = {
+resource tmpSubnet 'Microsoft.Network/virtualNetworks/subnets@2022-05-01' existing = {
   name: subnetName
   parent: tmpSpokeVnet
 }
 
+// Create a storage account
+resource diagstorageAccount 'Microsoft.Storage/storageAccounts@2022-05-01' = {
+  name: storageAccountName
+  location: location
+  sku: {
+    name: 'Standard_LRS'
+  }
+  kind: 'StorageV2'
+}
+
 // Create a network interface in the subnet
-resource VmWindowsNic 'Microsoft.Network/networkInterfaces@2023-05-01' = {
-  name: 'Nic-${vmName}'
+resource VmWindowsNic 'Microsoft.Network/networkInterfaces@2022-05-01' = {
+  name: 'poc-NIC-${vmName}'
   location: location
   //dependsOn: [
   //  tmpSubnet
@@ -31,7 +42,7 @@ resource VmWindowsNic 'Microsoft.Network/networkInterfaces@2023-05-01' = {
   properties: {
     ipConfigurations: [
       {
-        name: 'Nic-${vmComputerName}'
+        name: 'poc-NIC-${vmComputerName}'
         properties: {
           subnet: {
             id: tmpSubnet.id
@@ -44,7 +55,7 @@ resource VmWindowsNic 'Microsoft.Network/networkInterfaces@2023-05-01' = {
 }
 
 // create a virtual machine in the spoke virtual network
-resource createVM 'Microsoft.Compute/virtualMachines@2023-07-01' = {
+resource createVM 'Microsoft.Compute/virtualMachines@2022-08-01' = {
   name: vmName
   location: location
   dependsOn: [
@@ -87,6 +98,12 @@ resource createVM 'Microsoft.Compute/virtualMachines@2023-07-01' = {
           }
         }
       ]
+    }
+    diagnosticsProfile: {
+      bootDiagnostics: {
+        enabled: true
+        storageUri: diagstorageAccount.properties.primaryEndpoints.blob
+      }
     }
   }
 }
