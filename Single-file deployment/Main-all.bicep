@@ -11,18 +11,18 @@ param location string = resourceGroup().location
 // - - - Hub Virtual Network - - - 
 @description('Parameters for Hub Virtual Network')
 var vnetNameHub = 'poc-Hub-Vnet'
-var ipAddressPrefixHub = ['10.0.0.0/16']
+param ipAddressPrefixHub array = ['10.0.0.0/16']
 // - - - Peerings - - -
 var hubToSpokePeeringName = 'poc-hubtospokepeering'
 var spokeToHubPeeringName = 'poc-spoketohubpeering'
 // - - - Spoke Virtual Network - - - 
 @description('Parameters for Spoke Virtual Network')
 var vnetNameSpk = 'poc-Spk-Vnet-01'
-var ipAddressPrefixSpk = ['10.1.0.0/16']
+var ipAddressPrefixSpk = '10.1.0.0/16'
 var subnetName1Spk = 'poc-spk01-subnet01'
 var subnetName2Spk = 'poc-spk01-subnet02'
-var ipAddressPrefixSpk01Subnet01 = '10.1.0.0/24'
-var ipAddressPrefixSpk01Subnet02 = '10.1.1.0/24'
+param ipAddressPrefixSpk01Subnet01 array = ['10.1.0.0/24']
+param ipAddressPrefixSpk01Subnet02 array = ['10.1.1.0/24']
 // - - - Virtual Machine - - -
 @description('Parameters for Virtual Machine1')
 var vmName = ['poc-VM-01','poc-VM-02','poc-VM-03']
@@ -32,7 +32,7 @@ param adun string = 'adminuser'
 @secure()
 param adps string = 'P@ssw0rd1234'
 
-var vmComputerName = ['poc-VM-11','poc-VM-12','poc-VM-13']
+var vmComputerName = ['poc-vm-01','poc-vm-02','poc-vm-03']
 var vmOSVersion = 'Windows-10-N-x64'
 var vmIndex = [0,1,2]
 // - - - SQL Server - - -
@@ -54,7 +54,7 @@ var publicIpSkuTier = 'Regional'
 // - - - Bastion - - -
 @description('Parameters for Bastion')
 var bastionSubnetName = 'AzureBastionSubnet'
-var ipAddressPrefixBastionSubnet = '10.0.0.0/26'
+param ipAddressPrefixBastionSubnet array = ['10.0.0.0/26']
 var bastionName = 'poc-Bastion-Hub'
 // - - - Storage Account - - -
 @description('Parameters for Storage Account')
@@ -286,9 +286,6 @@ resource sqlDatabase 'Microsoft.Sql/servers/databases@2022-05-01-preview' = {
   name: sqlDatabaseName
   location: location
   parent: sqlServer
-  dependsOn: [
-    sqlServer
-  ]
   sku: {
     name: 'Standard'
     tier: 'Standard'

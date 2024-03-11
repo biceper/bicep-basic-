@@ -17,11 +17,11 @@ var spokeToHubPeeringName = 'poc-spoketohubpeering'
 // - - - Spoke Virtual Network - - - 
 @description('Parameters for Spoke Virtual Network')
 var vnetNameSpk = 'poc-Spk-Vnet-01'
-var ipAddressPrefixSpk = ['10.1.0.0/16']
+var ipAddressPrefixSpk = '10.1.0.0/16'
 var subnetName1Spk = 'poc-spk01-subnet01'
 var subnetName2Spk = 'poc-spk01-subnet02'
-var ipAddressPrefixSpk01Subnet01 = '10.1.0.0/24'
-var ipAddressPrefixSpk01Subnet02 = '10.1.1.0/24'
+var ipAddressPrefixSpk01Subnet01 = ['10.1.0.0/24']
+var ipAddressPrefixSpk01Subnet02 = ['10.1.1.0/24']
 // - - - Virtual Machine - - -
 @description('Parameters for Virtual Machine1')
 var vmName = ['poc-VM-01','poc-VM-02','poc-VM-03']
@@ -37,7 +37,12 @@ var vmIndex = [0,1,2]
 // - - - SQL Server - - -
 @description('Parameters for SQL Server')
 var sqlServerName = 'poc${uniqueString(resourceGroup().id,deployment().name)}'
-var sqlDatabaseName = 'poc-bicep-poc-sqldatabase'
+var sqlDatabaseName = 'pocbicepsqldatabase'
+
+@secure()
+param sqlLoginId string = 'adminuser'
+@secure()
+param sqlLoginPassword string = 'Rduaain08180422'
 // - - - Public IP(Bastion) - - -
 @description('Parameters for Public IP(Bastion)')
 var publicIpName = 'poc-Bastion-PublicIP'
@@ -48,15 +53,14 @@ var publicIpSkuTier = 'Regional'
 // - - - Bastion - - -
 @description('Parameters for Bastion')
 var bastionSubnetName = 'AzureBastionSubnet'
-var ipAddressPrefixBastionSubnet = '10.0.0.0/26'
+var ipAddressPrefixBastionSubnet = ['10.0.0.0/26']
 var bastionName = 'poc-Bastion-Hub'
 // - - - Storage Account - - -
 @description('Parameters for Storage Account')
-var storageAccountName = 'poc-${uniqueString(resourceGroup().id,deployment().name,location)}'
+var storageAccountName = 'poc${uniqueString(resourceGroup().id,deployment().name,location)}'
 // - - - Log Analytics - - -
 // @description('Parameters for Log Analytics')
 // param logAnalyticsWorkspace string = 'poc-${uniqueString(resourceGroup().id,deployment().name,location)}'
-
 
 // - - - Boolean for engaging deployment - - -
 // - - - true: engage / false; not engage - - -
@@ -64,6 +68,7 @@ var storageAccountName = 'poc-${uniqueString(resourceGroup().id,deployment().nam
 param ExistHubVnet bool = true
 param ExistSpokeVnet bool = true
 param ExistVnetPeering bool = true
+param ExistNSG bool = true
 param ExistVM bool = true
 param ExistSQLServer bool = true
 param ExistBastion bool = true
@@ -112,9 +117,24 @@ module createVNetPeering './modules/3.vnetPeering.bicep' = if(ExistVnetPeering) 
   }
 }
 
-// 4. create a virtual machine in the spoke virtual network
-module createVM './modules/4.virtualMachine.bicep' = [for i in vmIndex: if(ExistVM) {
-  name: 'poc-NIC-${vmName[i]}'
+// 4. create a NSG and attach it to the subnet in the spoke virtual network
+module createNSG './modules/4.nsg.bicep' = if(ExistNSG) {
+  name : 'createNSG'
+  dependsOn: [
+    createSpokeVNet
+  ]
+  params: {
+    location: location
+    nsgName: 'poc-nsg-${createSpokeVNet.outputs.opSpkSubnetName0}'
+    spkvnetName: createSpokeVNet.outputs.opSpkVnetName
+    spksubnetName: createSpokeVNet.outputs.opSpkSubnetName0
+    spksubnetipaddress: createSpokeVNet.outputs.opSpkSubnetPrefix0
+  }
+}
+
+// 5. create a virtual machine in the spoke virtual network
+module createVM './modules/5.virtualMachine.bicep' = [for i in vmIndex: if(ExistVM) {
+  name: 'create${vmName[i]}'
   dependsOn: [
     createSpokeVNet
   ]
@@ -132,8 +152,8 @@ module createVM './modules/4.virtualMachine.bicep' = [for i in vmIndex: if(Exist
   }
 }]
 
-// 5. create a SQL Server and a SQL Database
-module createSQLServer './modules/5.sqlServer&Database.bicep' = if(ExistSQLServer) {
+// 6. create a SQL Server and a SQL Database
+module createSQLServer './modules/6.sqlServer&Database.bicep' = if(ExistSQLServer) {
 name: 'createSQLServer'
 params: {
   location: location
@@ -142,8 +162,8 @@ params: {
 }
 }
 
-// 6. create a bastion subnet in the hub virtual network
-module createBastion './modules/6.bastion.bicep' = if(ExistBastion) {
+// 7. create a bastion subnet in the hub virtual network
+module createBastion './modules/7.bastion.bicep' = if(ExistBastion) {
   name: 'createBastion'
   dependsOn: [
     createHubVNet
