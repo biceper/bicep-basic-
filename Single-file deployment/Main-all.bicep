@@ -38,7 +38,12 @@ var vmIndex = [0,1,2]
 // - - - SQL Server - - -
 @description('Parameters for SQL Server')
 var sqlServerName = 'poc${uniqueString(resourceGroup().id,deployment().name)}'
-var sqlDatabaseName = 'poc-bicep-poc-sqldatabase'
+var sqlDatabaseName = 'pocbicepsqldatabase'
+
+@secure()
+param sqlLoginId string = 'adminuser'
+@secure()
+param sqlLoginPassword string = 'Rduaain08180422'
 // - - - Public IP(Bastion) - - -
 @description('Parameters for Public IP(Bastion)')
 var publicIpName = 'poc-Bastion-PublicIP'
@@ -53,7 +58,7 @@ var ipAddressPrefixBastionSubnet = '10.0.0.0/26'
 var bastionName = 'poc-Bastion-Hub'
 // - - - Storage Account - - -
 @description('Parameters for Storage Account')
-var storageAccountName = 'poc-${uniqueString(resourceGroup().id,deployment().name,location)}'
+var storageAccountName = 'poc${uniqueString(resourceGroup().id,deployment().name,location)}'
 // - - - Log Analytics - - -
 // @description('Parameters for Log Analytics')
 // param logAnalyticsWorkspace string = 'poc-${uniqueString(resourceGroup().id,deployment().name,location)}'
@@ -271,8 +276,8 @@ resource sqlServer 'Microsoft.Sql/servers@2022-05-01-preview' = {
   name: sqlServerName
   location: location
   properties: {
-    administratorLogin: 'adminuser'
-    administratorLoginPassword: 'Rduaain08180422'
+    administratorLogin: sqlLoginId
+    administratorLoginPassword: sqlLoginPassword
   }
 }
 
@@ -350,5 +355,4 @@ resource bastionHost 'Microsoft.Network/bastionHosts@2022-05-01' = {
     ]
   }
 }
-
 //---EOF----

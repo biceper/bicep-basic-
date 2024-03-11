@@ -114,7 +114,7 @@ module createVNetPeering './modules/3.vnetPeering.bicep' = if(ExistVnetPeering) 
 
 // 4. create a virtual machine in the spoke virtual network
 module createVM './modules/4.virtualMachine.bicep' = [for i in vmIndex: if(ExistVM) {
-  name: 'VM${i}'
+  name: 'poc-NIC-${vmName[i]}'
   dependsOn: [
     createSpokeVNet
   ]
