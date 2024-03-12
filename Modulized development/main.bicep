@@ -71,7 +71,7 @@ param ExistVnetPeering bool = true
 param ExistNSG bool = true
 param ExistVM bool = true
 param ExistSQLServer bool = true
-param ExistBastion bool = false
+param ExistBastion bool = true
 //-------
 //-------
 //------- Program starts here -------
