@@ -35,6 +35,7 @@ param adps string = 'P@ssw0rd1234'
 var vmComputerName = ['poc-vm-01','poc-vm-02','poc-vm-03']
 var vmOSVersion = 'Windows-10-N-x64'
 var vmIndex = [0,1,2]
+param staticIPaddress array = ['10.1.0.10', '10.1.0.11', '10.1.0.12']
 // - - - SQL Server - - -
 @description('Parameters for SQL Server')
 var sqlServerName = 'poc${uniqueString(resourceGroup().id,deployment().name)}'
@@ -59,6 +60,13 @@ var bastionName = 'poc-Bastion-Hub'
 // - - - Storage Account - - -
 @description('Parameters for Storage Account')
 var storageAccountName = 'poc${uniqueString(resourceGroup().id,deployment().name)}'
+// - - - tags - - -
+@description('Parameters for tags')
+param tags object = {
+  environment: 'poc'
+  department: 'Infra'
+  project: 'Bicep'
+}
 // - - - Log Analytics - - -
 // @description('Parameters for Log Analytics')
 // param logAnalyticsWorkspace string = 'poc-${uniqueString(resourceGroup().id,deployment().name,location)}'
@@ -70,6 +78,7 @@ var storageAccountName = 'poc${uniqueString(resourceGroup().id,deployment().name
 // 1. Create a hub virtual network
 resource hubVNet 'Microsoft.Network/virtualNetworks@2022-05-01' = {
   name: vnetNameHub
+  tags: tags
   location: location
   properties: {
     addressSpace: {
@@ -82,6 +91,7 @@ resource hubVNet 'Microsoft.Network/virtualNetworks@2022-05-01' = {
 // 2. Create a spoke virtual network
 resource spokeVNet 'Microsoft.Network/virtualNetworks@2023-05-01' = {
   name: vnetNameSpk
+  tags: tags
   location: location
   dependsOn: [
     hubVNet
@@ -146,6 +156,7 @@ resource spokeToHubPeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeer
 // 4-1. create NSGs for network interfaces
 resource nsg 'Microsoft.Network/networkSecurityGroups@2022-05-01' = {
   name: 'poc-NSG-${subnetspk01.name}'
+  tags: tags
   location: location
   properties: {
     securityRules: [
@@ -188,6 +199,7 @@ resource rebuildsubnet 'Microsoft.Network/virtualNetworks/subnets@2023-09-01' = 
 // 5-1. Create a storage account
 resource diagstorageAccount 'Microsoft.Storage/storageAccounts@2022-05-01' = [for i in vmIndex:{
   name: '${storageAccountName}${i}'
+  tags: tags
   location: location
   sku: {
     name: 'Standard_LRS'
@@ -198,6 +210,7 @@ resource diagstorageAccount 'Microsoft.Storage/storageAccounts@2022-05-01' = [fo
 // 5-2. create network interfaces in the subnet (Loop for 3 times)
 resource vmWindowsNic 'Microsoft.Network/networkInterfaces@2022-05-01' = [for i in vmIndex:{
   name: 'poc-NIC-${vmName[i]}'
+  tags: tags
   location: location
   dependsOn: [spokeVNet, subnetspk01]
   properties: {
@@ -208,7 +221,8 @@ resource vmWindowsNic 'Microsoft.Network/networkInterfaces@2022-05-01' = [for i 
           subnet: {
             id: subnetspk01.id
           }
-          privateIPAllocationMethod: 'Dynamic'
+          privateIPAllocationMethod: 'Static'
+          privateIPAddress: staticIPaddress[i]
         }
       } 
     ]
@@ -218,6 +232,7 @@ resource vmWindowsNic 'Microsoft.Network/networkInterfaces@2022-05-01' = [for i 
 // 5-3. deploy virtual machines (Loop for 3 times)
 resource createVM 'Microsoft.Compute/virtualMachines@2022-08-01' = [for i in vmIndex:{
   name: vmName[i]
+  tags: tags
   location: location
   dependsOn: [
     vmWindowsNic[i]
@@ -274,6 +289,7 @@ resource createVM 'Microsoft.Compute/virtualMachines@2022-08-01' = [for i in vmI
 // 6-1. create a SQL Server
 resource sqlServer 'Microsoft.Sql/servers@2022-05-01-preview' = {
   name: sqlServerName
+  tags: tags
   location: location
   properties: {
     administratorLogin: sqlLoginId
@@ -284,6 +300,7 @@ resource sqlServer 'Microsoft.Sql/servers@2022-05-01-preview' = {
 // 6-2. create a SQL Database
 resource sqlDatabase 'Microsoft.Sql/servers/databases@2022-05-01-preview' = {
   name: sqlDatabaseName
+  tags: tags
   location: location
   parent: sqlServer
   sku: {
@@ -309,6 +326,7 @@ resource subnetOfBastion 'Microsoft.Network/virtualNetworks/subnets@2022-05-01' 
 // 7-2. create a public IP address for the bastion host
 resource publicIp 'Microsoft.Network/publicIPAddresses@2022-05-01' = {
   name: publicIpName
+  tags: tags
   location: location
   properties: {
     publicIPAllocationMethod: publicIpAllocationMethod
@@ -323,6 +341,7 @@ resource publicIp 'Microsoft.Network/publicIPAddresses@2022-05-01' = {
 // 7-3. create a bastion host in the bastion subnet
 resource bastionHost 'Microsoft.Network/bastionHosts@2022-05-01' = {
   name: bastionName
+  tags: tags
   location: location
   dependsOn: [
     subnetOfBastion

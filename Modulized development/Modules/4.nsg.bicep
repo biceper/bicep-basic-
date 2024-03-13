@@ -3,11 +3,13 @@ param nsgName string
 param spkvnetName string
 param spksubnetName string
 param spksubnetipaddress string
+param tags object
 
 // 4. Create a NSG and attach it to the subnet in the spoke virtual network
 // 4-1. create NSGs for network interfaces
 resource nsg 'Microsoft.Network/networkSecurityGroups@2022-05-01' = {
   name: nsgName
+  tags: tags
   location: location
   properties: {
     securityRules: [

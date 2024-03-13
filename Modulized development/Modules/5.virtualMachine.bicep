@@ -5,7 +5,9 @@ param vmName string
 param vmSize string
 param vmComputerName string
 param vmOSVersion string
+param staticIPaddress string
 param storageAccountName string
+param tag object
 
 @secure()
 param adminUsername string
@@ -25,6 +27,7 @@ resource tmpSubnet 'Microsoft.Network/virtualNetworks/subnets@2022-05-01' existi
 // Create a storage account
 resource diagstorageAccount 'Microsoft.Storage/storageAccounts@2022-05-01' = {
   name: storageAccountName
+  tags: tag
   location: location
   sku: {
     name: 'Standard_LRS'
@@ -35,6 +38,7 @@ resource diagstorageAccount 'Microsoft.Storage/storageAccounts@2022-05-01' = {
 // Create a network interface in the subnet
 resource VmWindowsNic 'Microsoft.Network/networkInterfaces@2022-05-01' = {
   name: 'poc-NIC-${vmName}'
+  tags: tag
   location: location
   //dependsOn: [
   //  tmpSubnet
@@ -47,7 +51,8 @@ resource VmWindowsNic 'Microsoft.Network/networkInterfaces@2022-05-01' = {
           subnet: {
             id: tmpSubnet.id
           }
-          privateIPAllocationMethod: 'Dynamic'
+          privateIPAllocationMethod: 'static'
+          privateIPAddress: staticIPaddress
         }
       }
     ]
@@ -57,6 +62,7 @@ resource VmWindowsNic 'Microsoft.Network/networkInterfaces@2022-05-01' = {
 // create a virtual machine in the spoke virtual network
 resource createVM 'Microsoft.Compute/virtualMachines@2022-08-01' = {
   name: vmName
+  tags: tag
   location: location
   dependsOn: [
     VmWindowsNic
