@@ -11,6 +11,7 @@ param publicIpSkuTier string
 param publicIpName string
 //---------
 param bastionName string
+param tags object
 
 //========= Get existing resources =========
 resource hubVnet 'Microsoft.Network/virtualNetworks@2022-05-01' existing = {
@@ -40,6 +41,7 @@ resource subnetOfBastion 'Microsoft.Network/virtualNetworks/subnets@2022-05-01' 
 // Create a public IP address for the bastion host
 resource publicIp 'Microsoft.Network/publicIPAddresses@2021-02-01' = {
   name: publicIpName
+  tags: tags
   location: location
   properties: {
     publicIPAllocationMethod: publicIpAllocationMethod
@@ -54,6 +56,7 @@ resource publicIp 'Microsoft.Network/publicIPAddresses@2021-02-01' = {
 //create a bastion host in the bastion subnet
 resource bastionHost 'Microsoft.Network/bastionHosts@2023-05-01' = {
   name: bastionName
+  tags: tags
   location: location
   dependsOn: [
     subnetOfBastion

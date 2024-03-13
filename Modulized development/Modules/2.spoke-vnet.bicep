@@ -5,9 +5,11 @@ param subnetPrefix1 string
 param subnetPrefix2 string
 param subnetName1 string
 param subnetName2 string
+param tags object
 
 resource spokeVnet 'Microsoft.Network/virtualNetworks@2022-05-01' = {
   name: vnetName
+  tags: tags
   location: location
   properties: {
     addressSpace: {

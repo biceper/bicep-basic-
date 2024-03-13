@@ -34,6 +34,7 @@ param adps string = 'P@ssw0rd1234'
 var vmComputerName = ['poc-vm-01','poc-vm-02','poc-vm-03']
 var vmOSVersion = 'Windows-10-N-x64'
 var vmIndex = [0,1,2]
+param staticIPaddress array = ['10.1.0.10', '10.1.0.11', '10.1.0.12']
 // - - - SQL Server - - -
 @description('Parameters for SQL Server')
 var sqlServerName = 'poc${uniqueString(resourceGroup().id,deployment().name)}'
@@ -61,6 +62,13 @@ var storageAccountName = 'poc${uniqueString(resourceGroup().id,deployment().name
 // - - - Log Analytics - - -
 // @description('Parameters for Log Analytics')
 // param logAnalyticsWorkspace string = 'poc-${uniqueString(resourceGroup().id,deployment().name,location)}'
+// - - - Tags - - -
+@description('Parameters for tags')
+param tags object = {
+  environment: 'poc'
+  department: 'Infra'
+  project: 'Bicep'
+}
 
 // - - - Boolean for engaging deployment - - -
 // - - - true: engage / false; not engage - - -
@@ -80,6 +88,7 @@ param ExistBastion bool = true
 module createHubVNet './modules/1.hub-vnet.bicep' = if (ExistHubVnet) {
   name: 'createHubVnet'
   params: {
+    tags: tags
     location: location
     vnetName: vnetNameHub
     ipAddressPrefixes: ipAddressPrefixHub
@@ -90,6 +99,7 @@ module createHubVNet './modules/1.hub-vnet.bicep' = if (ExistHubVnet) {
 module createSpokeVNet './modules/2.spoke-vnet.bicep' = if(ExistSpokeVnet) {
   name: 'createSpokeVnet'
   params: {
+    tags: tags
     location: location
     vnetName: vnetNameSpk
     ipAddressPrefix: ipAddressPrefixSpk
@@ -124,6 +134,7 @@ module createNSG './modules/4.nsg.bicep' = if(ExistNSG) {
     createSpokeVNet
   ]
   params: {
+    tags: tags
     location: location
     nsgName: 'poc-nsg-${createSpokeVNet.outputs.opSpkSubnetName0}'
     spkvnetName: createSpokeVNet.outputs.opSpkVnetName
@@ -139,6 +150,7 @@ module createVM './modules/5.virtualMachine.bicep' = [for i in vmIndex: if(Exist
     createSpokeVNet
   ]
   params: {
+    tags: tags
     location: location
     vnetName: vnetNameSpk
     subnetName: subnetName1Spk
@@ -148,6 +160,7 @@ module createVM './modules/5.virtualMachine.bicep' = [for i in vmIndex: if(Exist
     adminPassword: adps
     vmComputerName: vmComputerName[i]
     vmOSVersion: vmOSVersion
+    staticIPaddress: staticIPaddress[i]
     storageAccountName: '${storageAccountName}${i}'
   }
 }]
@@ -156,9 +169,12 @@ module createVM './modules/5.virtualMachine.bicep' = [for i in vmIndex: if(Exist
 module createSQLServer './modules/6.sqlServer&Database.bicep' = if(ExistSQLServer) {
 name: 'createSQLServer'
 params: {
+  tags: tags
   location: location
   sqlServerName: sqlServerName
   sqlDatabaseName: sqlDatabaseName
+  sqlLoginId: sqlLoginId
+  sqlLoginPassword:sqlLoginPassword
 }
 }
 
@@ -171,6 +187,7 @@ module createBastion './modules/7.bastion.bicep' = if(ExistBastion) {
     createVNetPeering
   ]
   params: {
+    tags: tags
     location: location
     vnetName: createHubVNet.outputs.ophubVnetName
     subnetName: bastionSubnetName
