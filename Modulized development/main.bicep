@@ -150,7 +150,7 @@ module createVM './modules/5.virtualMachine.bicep' = [for i in vmIndex: if(Exist
     createSpokeVNet
   ]
   params: {
-    tags: tags
+    tag: tags
     location: location
     vnetName: vnetNameSpk
     subnetName: subnetName1Spk
