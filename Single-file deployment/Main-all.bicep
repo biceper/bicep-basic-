@@ -5,7 +5,6 @@
 // - - - - - - - - - - - - -
 // - - - - - - - - - - - - -
 
-
 // - - - Paremeters defination - - - 
 @description('Parameter for location')
 param location string = resourceGroup().location

@@ -13,7 +13,7 @@ param adps = 'P@ssw0rd1234'
 param staticIPaddress = [
   '10.1.0.10'
   '10.1.0.11'
-  '10.1.0.13'
+  '10.1.0.12'
 ]
 param sqlLoginId = 'adminuser'
 param sqlLoginPassword = 'Rduaain08180422'
