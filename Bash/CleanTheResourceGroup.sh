@@ -225,9 +225,22 @@ echo "Getting Public IP list"
     for id in ${items[@]}
     do
         echo "Deleting Public IP with Id: "$id
-        az network public-ip delete --ids $id --yes
+        az network public-ip delete --ids $id
         wait
         echo "Deleted Public IP with Id: "$id    
+    done
+
+    # --- delete UDR -------
+echo "Getting route-table list"
+
+    echo " "
+    items=$(az network route-table list --resource-group $resourceGroupName --subscription $subscriptionName --query "[].id" -o tsv)
+    for id in ${items[@]}
+    do
+        echo "Deleting route-table with Id: "$id
+        az network route-table delete --ids $id
+        wait
+        echo "Deleted route-table with Id: "$id    
     done
 
 # --- delete all vnets -------
