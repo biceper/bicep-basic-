@@ -1,19 +1,14 @@
+# --- This script is used to delete all resources in the resource group ---
 subscriptionName="Skaneshiro-external-sub-1"
 resourceGroupName="Bicep-fundermental-resourcegroup"
 hubvnetName="poc-Hub-Vnet"
 spokevnetName="poc-Spk-Vnet-01"
+
+# ----------------- Functions -----------------
 echo "Start deleting Bastion"
 az network bastion delete --name 'poc-Bastion-Hub' --resource-group $resourceGroupName --subscription $subscriptionName
 wait    # wait for the bastion deletion
 echo "Bastion was deleted"
-echo " "
-echo " "
-
-echo "Start deleting public ip for Bastion"
-az network public-ip delete --name 'poc-Bastion-PublicIP' --resource-group $resourceGroupName --subscription $subscriptionName
-wait    # wait for the public ip deletion
-echo "Public ip for Bastion was deleted"
-echo " "
 echo " "
 
 #--- Detach all nsgs -------
@@ -83,11 +78,11 @@ then
 
     for id in ${NIGs[@]}
     do
-        echo "Deleting NIG with Id: "$id
+        echo "Deleting NIC with Id: "$id
         echo " "
         az network nic delete --ids $id
         wait    # wait for the nsg deletion
-        echo "Deleted NIG with Id: "$id
+        echo "Deleted NIC with Id: "$id
         echo " "
     done
 fi
@@ -207,6 +202,35 @@ echo "Getting Storage Account list"
         echo "Deleted Storage Account with Id: "$id    
     done
 
+
+# --- delete Azure firewall -------
+az network firewall delete --name 'poc-Firewall-Hub' --resource-group $resourceGroupName --subscription $subscriptionName
+echo "Getting Azure firewall list"
+
+    echo " "
+    items=$(az network firewall list --resource-group $resourceGroupName --subscription $subscriptionName --query "[].id" -o tsv)
+    for id in ${items[@]}
+    do
+        echo "Deleting Azure firewall with Id: "$id
+        az network firewall delete --ids $id
+        wait
+        echo "Deleted Azure firewall with Id: "$id    
+    done
+
+# --- delete Public IP -------
+echo "Getting Public IP list"
+
+    echo " "
+    items=$(az network public-ip list --resource-group $resourceGroupName --subscription $subscriptionName --query "[].id" -o tsv)
+    for id in ${items[@]}
+    do
+        echo "Deleting Public IP with Id: "$id
+        az network public-ip delete --ids $id --yes
+        wait
+        echo "Deleted Public IP with Id: "$id    
+    done
+
+# --- delete all vnets -------
 az network vnet delete --name $hubvnetName --resource-group $resourceGroupName --subscription $subscriptionName
 wait    # wait for the vnet deletion
 az network vnet delete --name $spokevnetName --resource-group $resourceGroupName --subscription $subscriptionName
