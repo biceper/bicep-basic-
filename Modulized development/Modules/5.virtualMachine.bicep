@@ -8,10 +8,9 @@ param vmOSVersion string
 param staticIPaddress string
 param storageAccountName string
 param tag object
-
+//---------
 @secure()
 param adminUsername string
-
 @secure()
 param adminPassword string
 

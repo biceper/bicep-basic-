@@ -76,7 +76,7 @@ param tags object = {
 //------- Program starts here ------
 //---------
 // 1. Create a hub virtual network
-resource hubVNet 'Microsoft.Network/virtualNetworks@2022-05-01' = {
+resource hubVNet 'Microsoft.Network/virtualNetworks@2023-04-01' = {
   name: vnetNameHub
   tags: tags
   location: location

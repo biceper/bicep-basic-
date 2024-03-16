@@ -1,4 +1,4 @@
-using './Main-all.bicep'
+using './main.bicep'
 
 param ipAddressPrefixHub = [
   '10.0.0.0/16'
@@ -23,4 +23,11 @@ param tags = {
   department: 'Infra'
   project: 'Bicep'
 }
+param ExistHubVnet = true
+param ExistSpokeVnet = true
+param ExistVnetPeering = true
+param ExistNSG = true
+param ExistVM = true
+param ExistSQLServer = true
+param ExistBastion = true
 
