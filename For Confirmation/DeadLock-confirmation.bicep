@@ -113,7 +113,14 @@ resource createSpokeVNet 'Microsoft.Network/virtualNetworks@2023-05-01' = {
   }
 }
 
-// - - - 3.Create an UDR - - -
+// - - - 3.Recall the subnet of the Spoke VNet - - -
+resource getSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-05-01' existing = {
+  name: createSpokeVNet.properties.subnets[0].name
+}
+output SubnetName string = getSubnet.name
+output SubnetIPId string =  getSubnet.id
+
+// - - - 4.Create an UDR - - -
 resource createUDR 'Microsoft.Network/routeTables@2022-05-01' = {
   name: 'poc-UDR-01'
   location: location
@@ -132,13 +139,6 @@ resource createUDR 'Microsoft.Network/routeTables@2022-05-01' = {
     ]
   }
 }
-
-// - - - 4.Recall the subnet of the Spoke VNet - - -
-resource getSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-05-01' existing = {
-  name: createSpokeVNet.properties.subnets[0].name
-}
-output SubnetName string = getSubnet.name
-output SubnetIPId string =  getSubnet.id
 
 // - - - 5.Rebuild subnet to attach the UDR - - -
 resource rebuildSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-05-01' = {

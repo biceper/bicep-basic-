@@ -73,7 +73,7 @@ param tags object = {
 // - - - Boolean for engaging deployment - - -
 // - - - true: engage / false; not engage - - -
 @description('Booleans for engaging deployment')
-param ExistHubVnet bool = false
+param ExistHubVnet bool = true
 param ExistSpokeVnet bool = true
 param ExistVnetPeering bool = true
 param ExistNSG bool = true

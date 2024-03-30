@@ -25,9 +25,9 @@ param tags = {
 }
 param ExistHubVnet = true
 param ExistSpokeVnet = true
-param ExistVnetPeering = true
-param ExistNSG = true
-param ExistVM = true
-param ExistSQLServer = true
-param ExistBastion = true
+param ExistVnetPeering = false
+param ExistNSG = false
+param ExistVM = false
+param ExistSQLServer = false
+param ExistBastion = false
 
