@@ -41,23 +41,23 @@ resource createPrivateEndpoint 'Microsoft.Network/privateEndpoints@2023-09-01' =
 }
 
 resource createPrivateDnsZone 'Microsoft.Network/privateDnsZones@2020-06-01' = {
-  name: 'createPrivateDnsZone'
-  location: location
-  dependsOn: [
-    createPrivateEndpoint
-  ]
+  name: 'privatelink${environment().suffixes.storage}'
+  location: 'global'
 }
 
-resource createPrivateDnsLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = {
-  parent: createPrivateDnsZone
-  name: '${createPrivateDnsZone.name}-${createPrivateEndpoint.name}'
-  properties: {
-    virtualNetwork: {
-      id: SpokeVNetSubnetID
-    }
-    registrationEnabled: false
-  }
-}
+// resource createPrivateDnsLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = {
+//   parent: createPrivateDnsZone
+//   dependsOn: [
+//     createPrivateDnsZone,createPrivateEndpoint
+//   ]
+//   name: '${createPrivateDnsZone.name}-${createPrivateEndpoint.name}'
+//   properties: {
+//     virtualNetwork: {
+//       id: SpokeVNetSubnetID
+//     }
+//     registrationEnabled: false
+//   }
+// }
 
 output opStorageAccountID string = createStorageAccount.id
 output opStorageAccountName string = createStorageAccount.name
