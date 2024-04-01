@@ -88,6 +88,6 @@ resource bastionHost 'Microsoft.Network/bastionHosts@2023-05-01' = {
   }
 }
 
-output bastionName string = bastionHost.name
-output bastionId string = bastionHost.id
+output opBastionName string = bastionHost.name
+output opBastionId string = bastionHost.id
 

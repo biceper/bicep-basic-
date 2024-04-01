@@ -23,7 +23,6 @@ then
 
     for vnet in $vnets
     do 
-#----------
         ### detach nsg from each subnet and delete every subnet of the Spoke vnet
         if (( $deleteFLG == 1 ))
         then
@@ -42,6 +41,28 @@ then
                 echo " "
             done
         fi
+    done
+fi
+
+#--- Delete all Private Endpoint -------
+echo "■ Start deleting all Private Endpoint"
+echo " "
+
+deleteFLG=1
+if  (( $deleteFLG == 1 ))
+then
+    echo "Getting PE list in the resource group: "$resourceGroupName""
+    echo " "
+    items=$(az network private-endpoint list --resource-group $resourceGroupName --subscription $subscriptionName --query "[].id" -o tsv)
+
+    for id in ${items[@]}
+    do
+        echo "Deleting Private Endpoint with Id: "$id
+        echo " "
+        az network private-endpoint delete --ids $id
+        wait    # wait for the PE deletion
+        echo "Deleted Private Endpoint with Id: "$id
+        echo " "
     done
 fi
 

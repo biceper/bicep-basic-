@@ -56,13 +56,18 @@ var publicIpSkuTier = 'Regional'
 var bastionSubnetName = 'AzureBastionSubnet'
 param ipAddressPrefixBastionSubnet string = '10.0.0.0/26'
 var bastionName = 'poc-Bastion-Hub'
+
 // - - - Storage Account - - -
 @description('Parameters for Storage Account')
-var storageAccountName = 'poc${uniqueString(resourceGroup().id,deployment().name)}'
+param storageAccountName string = 'poc${uniqueString(resourceGroup().id,deployment().name)}'
+param storageAccountSku string = 'Standard_LRS'
+param storageAccountKind string = 'StorageV2'
+
 // - - - Log Analytics - - -
 // @description('Parameters for Log Analytics')
 // param logAnalyticsWorkspace string = 'poc-${uniqueString(resourceGroup().id,deployment().name,location)}'
 // - - - Tags - - -
+
 @description('Parameters for tags')
 param tags object = {
   environment: 'poc'
@@ -80,6 +85,8 @@ param ExistNSG bool = true
 param ExistVM bool = true
 param ExistSQLServer bool = true
 param ExistBastion bool = true
+param ExistStorageAccount bool = true
+param ExistVMTrial bool = true
 //-------
 //-------
 //------- Program starts here -------
@@ -201,4 +208,40 @@ module createBastion './modules/7.bastion.bicep' = if(ExistBastion) {
   }
 }
 
+// 8. create a storage account with a private endpoint
+module createStorageAccount './modules/9.storageAccount.bicep' = if (ExistStorageAccount) {
+  name: 'createStorageAccount'
+  params: {
+    tag: tags
+    location: location
+    storageAccountName: storageAccountName
+    storageAccountSKU:storageAccountSku
+    storageAccountKind:storageAccountKind
+    SpokeVNetSubnetID: createSpokeVNet.outputs.opSpkeSubnetId0
+  }
+}
+
+// 10. create a virtual machine in the spoke virtual network
+module createVMTrial './modules/10.vmtrial.bicep' = if (ExistVMTrial) {
+  name: 'createVMTrial'
+  dependsOn: [
+    createSpokeVNet
+  ]
+  params: {
+    tag: tags
+    location: location
+    vnetName: vnetNameSpk
+    subnetName: subnetName1Spk
+    vmName: vmName[0]
+    vmSize: vmSize
+    adminUsername: adun
+    adminPassword: adps
+    vmComputerName: vmComputerName[0]
+    vmOSVersion: vmOSVersion
+    staticIPaddress: staticIPaddress[0]
+    storageAccountUri: createStorageAccount.outputs.opStorageAccountUri
+    storageAccountID: createStorageAccount.outputs.opStorageAccountID
+    storageAccountName: createStorageAccount.outputs.opStorageAccountName
+  }
+}
 //---EOF----

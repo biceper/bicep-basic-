@@ -36,5 +36,7 @@ output opSpkVnetId string = spokeVnet.id
 output opSpkVnetName string = spokeVnet.name
 output opSpkSubnetName0 string = spokeVnet.properties.subnets[0].name
 output opSpkSubnetName1 string = spokeVnet.properties.subnets[1].name
+output opSpkeSubnetId0 string = spokeVnet.properties.subnets[0].id
+output opSpkeSubnetId1 string = spokeVnet.properties.subnets[1].id
 output opSpkSubnetPrefix0 string = spokeVnet.properties.subnets[0].properties.addressPrefix
 output opSpkSubnetPrefix1 string = spokeVnet.properties.subnets[1].properties.addressPrefix
