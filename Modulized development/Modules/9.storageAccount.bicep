@@ -41,7 +41,7 @@ resource createPrivateEndpoint 'Microsoft.Network/privateEndpoints@2023-09-01' =
 }
 
 resource createPrivateDnsZone 'Microsoft.Network/privateDnsZones@2020-06-01' = {
-  name: 'privatelink${environment().suffixes.storage}'
+  name: 'privatelink.blob.${environment().suffixes.storage}'
   location: 'global'
 }
 
