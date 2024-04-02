@@ -4,6 +4,7 @@ param storageAccountName string
 param storageAccountSKU string
 @secure()
 param storageAccountKind string
+param SpokeVNetID string
 param SpokeVNetSubnetID string
 
 
@@ -45,19 +46,20 @@ resource createPrivateDnsZone 'Microsoft.Network/privateDnsZones@2020-06-01' = {
   location: 'global'
 }
 
-// resource createPrivateDnsLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = {
-//   parent: createPrivateDnsZone
-//   dependsOn: [
-//     createPrivateDnsZone,createPrivateEndpoint
-//   ]
-//   name: '${createPrivateDnsZone.name}-${createPrivateEndpoint.name}'
-//   properties: {
-//     virtualNetwork: {
-//       id: SpokeVNetSubnetID
-//     }
-//     registrationEnabled: false
-//   }
-// }
+resource createPrivateDnsLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = {
+  parent: createPrivateDnsZone
+  location: 'global'
+  dependsOn: [
+    createPrivateEndpoint
+  ]
+  name: 'pocprivatelink'
+  properties: {
+    virtualNetwork: {
+      id: SpokeVNetID
+    }
+    registrationEnabled: false
+  }
+}
 
 output opStorageAccountID string = createStorageAccount.id
 output opStorageAccountName string = createStorageAccount.name

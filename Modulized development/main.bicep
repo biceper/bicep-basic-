@@ -217,6 +217,7 @@ module createStorageAccount './modules/9.storageAccount.bicep' = if (ExistStorag
     storageAccountName: storageAccountName
     storageAccountSKU:storageAccountSku
     storageAccountKind:storageAccountKind
+    SpokeVNetID: createSpokeVNet.outputs.opSpkVnetId
     SpokeVNetSubnetID: createSpokeVNet.outputs.opSpkeSubnetId0
   }
 }
