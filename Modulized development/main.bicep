@@ -208,9 +208,12 @@ module createBastion './modules/7.bastion.bicep' = if(ExistBastion) {
   }
 }
 
-// 8. create a storage account with a private endpoint
+// 9. create a storage account with a private endpoint
 module createStorageAccount './modules/9.storageAccount.bicep' = if (ExistStorageAccount) {
   name: 'createStorageAccount'
+  dependsOn: [
+    createSpokeVNet
+  ]
   params: {
     tag: tags
     location: location
@@ -243,6 +246,8 @@ module createVMTrial './modules/10.vmtrial.bicep' = if (ExistVMTrial) {
     storageAccountUri: createStorageAccount.outputs.opStorageAccountUri
     storageAccountID: createStorageAccount.outputs.opStorageAccountID
     storageAccountName: createStorageAccount.outputs.opStorageAccountName
+    storageAccountKey: createStorageAccount.outputs.opStorageKey
+    storageAccountEndPoint: createStorageAccount.outputs.opPrivateEndpointID
   }
 }
 //---EOF----

@@ -264,16 +264,28 @@ echo "Getting route-table list"
         echo "Deleted route-table with Id: "$id    
     done
 
+# --- delete all Private Link -------
+echo "Getting Private Link list"
+
+    echo " "
+    items=$(az network private-dns link vnet list --resource-group $resourceGroupName --subscription $subscriptionName --query "[].id" -o tsv)
+    for id in ${items[@]}
+    do
+        echo "Deleting Private Link with Id: "$id
+        az network private-dns link vnet delete --ids $id --yes
+        wait
+        echo "Deleted Private Link with Id: "$id    
+    done
 
 # --- delete all Private Zone -------
 echo "Getting Private Zone list"
 
     echo " "
-    items=$(az network private-endpoint dns-zone-group list --resource-group $resourceGroupName --subscription $subscriptionName --query "[].id" -o tsv)
+    items=$(az network private-dns zone list --resource-group $resourceGroupName --subscription $subscriptionName --query "[].id" -o tsv)
     for id in ${items[@]}
     do
         echo "Deleting Private Zone with Id: "$id
-        az network private-endpoint dns-zone-group delete --ids $id
+        az network private-dns zone delete --ids $id --yes
         wait
         echo "Deleted Private Zone with Id: "$id    
     done

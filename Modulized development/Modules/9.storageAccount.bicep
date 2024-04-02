@@ -41,11 +41,13 @@ resource createPrivateEndpoint 'Microsoft.Network/privateEndpoints@2023-09-01' =
   }
 }
 
+// - - - Create a private DNS zone - - -
 resource createPrivateDnsZone 'Microsoft.Network/privateDnsZones@2020-06-01' = {
   name: 'privatelink.blob.${environment().suffixes.storage}'
   location: 'global'
 }
 
+// - - - Create a private DNS link to the Spoke VNet - - -
 resource createPrivateDnsLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = {
   parent: createPrivateDnsZone
   location: 'global'
@@ -64,3 +66,5 @@ resource createPrivateDnsLink 'Microsoft.Network/privateDnsZones/virtualNetworkL
 output opStorageAccountID string = createStorageAccount.id
 output opStorageAccountName string = createStorageAccount.name
 output opStorageAccountUri string = createStorageAccount.properties.primaryEndpoints.blob
+output opStorageKey string = listKeys(createStorageAccount.id, '2023-01-01').keys[0].value
+output opPrivateEndpointID string = createPrivateEndpoint.id

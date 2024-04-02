@@ -31,4 +31,4 @@ param ExistVM = false
 param ExistSQLServer = false
 param ExistBastion = false
 param ExistStorageAccount = true
-param ExistVMTrial = false
+param ExistVMTrial = true

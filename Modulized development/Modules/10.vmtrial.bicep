@@ -10,6 +10,9 @@ param staticIPaddress string
 param storageAccountUri string
 param storageAccountID string
 param storageAccountName string
+@secure()
+param storageAccountKey string
+param storageAccountEndPoint string
 //---------
 @secure()
 param adminUsername string
@@ -112,23 +115,23 @@ resource createVM 'Microsoft.Compute/virtualMachines@2022-08-01' = {
   }
 }
 
-// resource virtualMachines_self_spoke01_windows_02_vm_name_Microsoft_Insights_VMDiagnosticsSettings 'Microsoft.Compute/virtualMachines/extensions@2023-03-01' = {
-//   parent: createVM
-//   name: 'Microsoft.Insights.VMDiagnosticsSettings'
-//   location: location
-//   properties: {
-//     autoUpgradeMinorVersion: true
-//     publisher: 'Microsoft.Azure.Diagnostics'
-//     type: 'IaaSDiagnostics'
-//     typeHandlerVersion: '1.5'
-//     settings: {
-//       StorageAccountID: storageAccountID
-//       xmlCfg: 'base64(concat(wadcfgxstart, wadmetricsresourceid, vmName, wadcfgxend))'
-//     }
-//     protectedSettings: {
-//       storageAccountName: storageAccountName
-//       storageAccountKey: extensions_Microsoft_Insights_VMDiagnosticsSettings_storageAccountKey
-//       storageAccountEndPoint: extensions_Microsoft_Insights_VMDiagnosticsSettings_storageAccountEndPoint
-//     }
-//   }
-// }
+resource virtualMachines_self_spoke01_windows_02_vm_name_Microsoft_Insights_VMDiagnosticsSettings 'Microsoft.Compute/virtualMachines/extensions@2023-03-01' = {
+  parent: createVM
+  name: 'vmdiagnosticsSettings'
+  location: location
+  properties: {
+    autoUpgradeMinorVersion: true
+    publisher: 'Microsoft.Azure.Diagnostics'
+    type: 'IaaSDiagnostics'
+    typeHandlerVersion: '1.5'
+    settings: {
+      StorageAccountID: storageAccountID
+      xmlCfg: 'base64(concat(wadcfgxstart, wadmetricsresourceid, vmName, wadcfgxend))'
+    }
+    protectedSettings: {
+      storageAccountName: storageAccountName
+      storageAccountKey: storageAccountKey
+      storageAccountEndPoint: storageAccountEndPoint
+    }
+  }
+}
